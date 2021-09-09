@@ -1,0 +1,4 @@
+[deps]
+DiffEqBiological = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
+DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"

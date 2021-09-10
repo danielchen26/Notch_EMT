@@ -1,8 +1,8 @@
 using Interact 
 using Catalyst, DataFrames
-using OrdinaryDiffEq, Plots;plotly()
+using DifferentialEquations, Plots;plotly()
 using Latexify, HomotopyContinuation
-
+using ProgressMeter
 
 
 Notch_model_cp = @reaction_network begin
@@ -27,7 +27,7 @@ end k0 k1 k2 d m p k pp kk δ α1 N # put N at last as the control 12th variable
 @var R NR M MR KDM5A H4 H0 PRC2 H27 KDM6A KMT
 function steady_states(param)
     k0, k1, k2, d, m, p, k, pp, kk, δ, α1, A = param
-    @show k0, k1, k2, d, m, p, k, pp, kk, δ, α1, A
+    # @show k0, k1, k2, d, m, p, k, pp, kk, δ, α1, A
     f_R = -A*R + NR - k1*M*R + k2*MR
     f_NR = A*R - NR
     f_M = -k1*M*R + k2*MR 
@@ -53,3 +53,15 @@ end
 model_p = [6.0, 1.0, 1.0, 0.1, 0.4, 5.0, 4.0, 4.0, 4.0, 1.0, 1.0, 0.0]
 k0, k1, k2, d, m, p, k, pp, kk, δ, α1, A = model_p
 positive_sol = steady_states(model_p)
+
+
+# Computing SSS for a parameter set
+@showprogress for  k0 = 6.0,  k1 = 1.0,  k2 = 1.0,
+      d = 0.1,  m = 0.4,  p = 5.0,
+      k = 0.0:4: 20.0,  pp = 0.0:4: 20.0,  kk = 0.0:4: 20.0,
+      δ = 1.0,  α1 = 1.0, N = 0.0 # this is a short working example
+
+	model_p = [k0, k1, k2, d, m, p, k, pp, kk, δ, α1, N]
+    sss = steady_states(model_p)
+    @show sss
+end 

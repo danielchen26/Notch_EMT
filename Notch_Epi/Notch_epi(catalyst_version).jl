@@ -74,7 +74,8 @@ tspan = (0.0,150)
 model_p = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, 0.0]
 prob = ODEProblem(Notch_model_cp, u0, tspan, model_p)
 sol = solve(prob, callback=cb, tstops=ts)
-dplt = plot(sol, vars = [ :KDM5A,:MR, :H4, :H27], lw  = 1.5)
+plot(sol, vars = [4,5,6,9 ], lw  = 1.5) # check speciesmap(Notch_model_cp) for index
+# dplt = plot(sol, vars = [KDM5A,MR, H4, H27], lw  = 1.5)
 
 # Gillespe
 dprob = DiscreteProblem(Notch_model_cp, u0, tspan, model_p)
@@ -243,3 +244,11 @@ plot(sim,linealpha=0.6, vars =[ :KDM5A,:MR, :H4, :H27])
 # 	plt = plot(sol, vars = [ :H4, :H27], lw  = 1.5, title = "$i")#:MR, :KDM5A,
 # 	display(plt)
 # end
+
+
+
+
+
+
+
+latexify(Notch_model_cp)

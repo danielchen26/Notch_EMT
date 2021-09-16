@@ -1,3 +1,4 @@
 {
-    "jupyter.jupyterServerType": "local"
+    "jupyter.jupyterServerType": "local",
+    "julia.environmentPath": "/Users/chentianchi/Desktop/Projects/Notch_EMT/SciML_Notch"
 }

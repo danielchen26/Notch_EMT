@@ -39,7 +39,7 @@ end
 # Model
 ####################################
 Notch_model_cp = @reaction_network begin
-    (N,1.0),              R ↔ NR               					# NICD binds RBPJ
+    (A,1.0),              R ↔ NR               					# NICD binds RBPJ
     (k1, k2),             M + R ↔ MR 		 			        # MITF binds RBPJ
      k0,		 		 MR --> MR + KDM5A    				        	# MITF-RBPJ recruit KDM5A
 	d, 	      	 		H4  + KDM5A  --> H0  + KDM5A      				 # Demethylation of active mark
@@ -52,7 +52,7 @@ Notch_model_cp = @reaction_network begin
 	k, 			H27 --> H27 + KDM5A        				        # KDM5A is enhenced by H27 mark
 	δ,			(PRC2, KDM5A, KDM6A, KMT) --> ∅            		        # Degradation of histone reader and writers
 	α1,          ∅ --> (KDM6A, KMT, PRC2, KDM5A)
-end k0 k1 k2 d m p k pp kk δ α1 N # put N at last as the control 12th variable
+end k0 k1 k2 d m p k pp kk δ α1 A # put N at last as the control 12th variable
 
 
 # @add_constraints Notch_model_cp  begin
@@ -249,6 +249,6 @@ plot(sim,linealpha=0.6, vars =[ :KDM5A,:MR, :H4, :H27])
 
 
 
-
-
-latexify(Notch_model_cp)
+using Latexify
+Notch_ode = convert(ODESystem, Notch_model_cp)
+latexify(Notch_ode)

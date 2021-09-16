@@ -1,5 +1,45 @@
 ## Packages
-using DiffEqFlux, DifferentialEquations, Plots
+using DiffEqFlux, DifferentialEquations, Plots; plotly()
+using ModelingToolkit, DataDrivenDiffEq
+
+@parameters k0 k1 k2 d m p k pp kk δ α1 A t
+@variables R(t) NR(t) M(t) MR(t) KDM5A(t) H4(t) H0(t) PRC2(t) H27(t) KDM6A(t) KMT(t) 
+D = Differential(t)
+
+
+##
+eqs = [ D(R)     ~ -A*R + NR - k1*M*R + k2*MR,
+        D(NR)    ~ A*R - NR,
+        D(M)     ~ -k1*M*R + k2*MR,
+        D(MR)    ~ k1*M*R - k2*MR, 
+        D(H4)    ~ -d*H4*KDM5A + H0*KMT,
+        D(KDM5A) ~ k0*MR + k*H27 - δ*KDM5A + α1,
+        D(H0)    ~ d*H4*KDM5A - m*H0*PRC2 + H27*KDM6A - H0*KMT,
+        D(PRC2)  ~ p*H27 - δ*PRC2 + α1,
+        D(H27)   ~ m*H0*PRC2 - H27*KDM6A, 
+        D(KDM6A) ~ kk*H4 - δ*KDM6A + α1,
+        D(KMT)   ~ pp*H4 - δ*KMT + α1  ]
+@named sys = ODESystem(eqs)
+##
+u0 = [R =>6.0, NR => 0.0, M => 6.0, MR => 40.0, KDM5A => 500.0,  H4 =>0.6876, 
+      H0 => 0.678, PRC2 => 500.0,  H27 => 50.6344 , KDM6A =>1.0, KMT =>2.0 ]
+model_p = [k0 => 10.0, k1 =>1.0, k2 =>1.0, d =>0.2, m => 0.53, 
+           p => 1.8, k => 3.77, pp => 19.08, kk => 19.08, δ => 1.0, α1 => 1.0, A =>0.0]
+tspan = (0.0,100.0)
+
+prob = ODEProblem(sys,u0,tspan,model_p,jac=true)
+sol = solve(prob,Tsit5())
+plot(sol, vars = [H27, H0])
+##
+
+jac = calculate_jacobian(sys)
+substitute.(jac, (u0,))
+
+generate_jacobian(sys, dvs = states(sys), ps = parameters(sys))
+
+
+sol[H0]
+
 
 
 ##  Model 
@@ -17,10 +57,18 @@ function Notch(du,u,p,t)
   du[9]  = dH27 = m*H0*PRC2 - H27*KDM6A 
   du[10] = dKDM6A = kk*H4 - δ*KDM6A + α1
   du[11] = dKMT = pp*H4 - δ*KMT + α1 
-  du[12] = Con_M = M + MR - 50.0   # conservation of M
-  du[13] = Con_R = R + MR + NR - 50.0     # conservation of R
-  du[14] = Con_H = H4 + H27 + H0 - 50.0
 end
+
+u0 = [6.0    ,0.0     ,6.0   ,40.0    ,500.0     ,0.6876 ,0.678  ,500.0    ,50.6344 ,1.0     ,2.0    ]
+tspan = (0.0,150)
+p = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, 0.0]
+prob = ODEProblem(Notch, u0, tspan, p)
+sol = solve(prob)
+plot(sol, vars = [4,5,6,9 ], lw  = 1.5) 
+
+
+
+
 
 
 ## Define DAE problem

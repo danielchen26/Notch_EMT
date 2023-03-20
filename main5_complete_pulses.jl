@@ -8,9 +8,6 @@ include("./main5_functions.jl")
 using Revise
 db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, db_idx = loading_database()
 
-
-
-
 ## 🥗============================= Import models and signal function =================================
 signal_type = "bump"
 model_bump = Import_model(; type=signal_type)

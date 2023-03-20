@@ -18,22 +18,22 @@
 
 Base.@kwdef mutable struct Signal
     db_idx::Int64
-    tspan::Tuple{Float64, Float64}
+    tspan::Tuple{Float64,Float64}
     freq::Float64
     phase::Float64
     amplitude::Float64
     T_init::Float64
-    ΔT_Dll4_ref ::Float64
+    ΔT_Dll4_ref::Float64
     ΔT::Float64
 end
 
 Base.@kwdef mutable struct Poisson_Signal
     db_idx::Int64
-    tspan::Tuple{Float64, Float64}
+    tspan::Tuple{Float64,Float64}
     freq::Float64
     amplitude::Float64
     T_init::Float64
-    ΔT_Dll4_ref ::Float64
+    ΔT_Dll4_ref::Float64
     ΔT::Float64
 end
 
@@ -43,7 +43,7 @@ end
 
 
 ## ================ import database =================
-function loading_database(;data_path = "../../../Notch_EMT_data/Notch_params_complete.csv")
+function loading_database(; data_path="../../../Notch_EMT_data/Notch_params_complete.csv")
     db = CSV.File(data_path) |> DataFrame
     p_names = names(db)[1:11]
     initi_names = names(db)[13:end]
@@ -64,9 +64,12 @@ function loading_database(;data_path = "../../../Notch_EMT_data/Notch_params_com
 end
 
 ##  ============ Import models ==========
-function Import_model(;type = "pulsatile")
+
+function Import_model(; type="pulsatile")
     if type == "pulsatile"
         model_pulsatile = @reaction_network begin
+            # @parameter k0 k1 k2 d m p k pp kk δ α1 w A ϕ # put A at last as the control 13th variable
+            # @species M(t) R(t) MR(t)
             (A * (1 + sign(cos(w * t + ϕ))), 1.0), R ↔ NR               # NICD binds RBPJ
             # (A * (abs(cos(w * t + ϕ))), 1.0), R ↔ NR               # NICD binds RBPJ 🍏🔴
             (k1, k2), M + R ↔ MR          # MITF binds RBPJ
@@ -85,6 +88,7 @@ function Import_model(;type = "pulsatile")
         model = model_pulsatile
     elseif type == "bump"
         model_bump = @reaction_network begin
+            # @parameters k0 k1 k2 d m p k pp kk δ α1 w A ϕ # put A at last as the control 13th variable
             # (A * (1 + sign(cos(w * t + ϕ))), 1.0), R ↔ NR               # NICD binds RBPJ
             (A * (abs(cos(w * t + ϕ))), 1.0), R ↔ NR               # NICD binds RBPJ 🍏🔴
             (k1, k2), M + R ↔ MR          # MITF binds RBPJ
@@ -99,7 +103,7 @@ function Import_model(;type = "pulsatile")
             k, H27 --> H27 + KDM5A                # KDM5A is enhenced by H27 mark
             δ, (PRC2, KDM5A, KDM6A, KMT) --> ∅                    # Degradation of histone reader and writers
             α1, ∅ --> (KDM6A, KMT, PRC2, KDM5A)
-        end k0 k1 k2 d m p k pp kk δ α1 w A ϕ # put A at last as the control 13th variable
+        end k0 k1 k2 d m p k pp kk δ α # put A at last as the control 13th variable
         model = model_bump
     end
     @show species(model)
@@ -129,7 +133,7 @@ function make_cb(ts_in, index, value)
             integrator.p[index] = 0.0
         end
     end
-    cb = DiscreteCallback(condition, affect!, save_positions = (true, true))
+    cb = DiscreteCallback(condition, affect!, save_positions=(true, true))
     return ts, cb
 end
 
@@ -138,7 +142,7 @@ test if the steady state switched
 	-1 : switched
 	 1 : not swithced
 """
-function check_switching(sol,ts,tspan)
+function check_switching(sol, ts, tspan)
     H4_i, H27_i = sol(ts[1])[[6, 9]]
     H4_f, H27_f = sol(tspan[2])[[6, 9]]
     init = H4_i / H27_i < 1 ? 1 : -1
@@ -147,7 +151,7 @@ function check_switching(sol,ts,tspan)
 end
 
 function add_Boundary_event(switch_amplitude, switch_frequency, plt)
-    df = DataFrame(switch_amplitude = switch_amplitude, switch_frequency = switch_frequency)
+    df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
     # CSV.write("switching_freq_amplitude.csv",df)
 
     gp = groupby(df, :switch_frequency)
@@ -158,12 +162,12 @@ function add_Boundary_event(switch_amplitude, switch_frequency, plt)
 
     critical_freq = [keys(gp)[i].switch_frequency for i = 1:gp.ngroups]
     boundary_amplitude
-    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label = "switching boundary", lw = 3)
+    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label="switching boundary", lw=3)
 end
 
 # save A-w data
 function save_A_w_data(switch_amplitude, switch_frequency, path)
-    df = DataFrame(switch_amplitude = switch_amplitude, switch_frequency = switch_frequency)
+    df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
     CSV.write(path * "switch_amplitude.csv", df)
 end
 
@@ -176,17 +180,17 @@ end
 
 
 # single solve, given a instance in database specified by db_idx.
-function single_solve(; model=model, signal = signal :: Signal, prc2 = "NA", mute_parameter_disp=false) #🍏🔴added prc2 changing option
-    p = vcat([collect(parameter_set[signal.db_idx, :]), signal.freq, 0.0, signal.phase]...);
+function single_solve(; model=model, signal=signal::Signal, prc2="NA", mute_parameter_disp=false) #🍏🔴added prc2 changing option
+    p = vcat([collect(parameter_set[signal.db_idx, :]), signal.freq, 0.0, signal.phase]...)
     pmap = parameters(model) .=> p
-    u0 = collect(initial_condition[signal.db_idx, :]);
+    u0 = collect(initial_condition[signal.db_idx, :])
     u0map = species(model) .=> u0
-    ts, cb = make_cb([signal.T_init, signal.T_init + signal.ΔT], 13, signal.amplitude);
-    prob1 = ODEProblem(model, u0map, signal.tspan, pmap);
+    ts, cb = make_cb([signal.T_init, signal.T_init + signal.ΔT], 13, signal.amplitude)
+    prob1 = ODEProblem(model, u0map, signal.tspan, pmap)
     if prc2 != "NA"
-        prob1 = remake_prob(model, u0map, signal.tspan, p; prc2=prc2, mute_parameter_disp=mute_parameter_disp);
+        prob1 = remake_prob(model, u0map, signal.tspan, p; prc2=prc2, mute_parameter_disp=mute_parameter_disp)
     end
-    sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts);
+    sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
     # sol = solve(prob1, TRBDF2(), callback=cb, tstops=ts);
     return u0map, pmap, p, signal.tspan, ts, cb, sol
 end
@@ -202,7 +206,7 @@ function remake_single_solve(; model=model, signal=signal::Signal, prc2="NA", mu
     pmap = parameters(model) .=> p
     u0 = collect(initial_condition[signal.db_idx, :])
     u0map = species(model) .=> u0
-    reset_signal(; signal=signal, amplitude=signal.amplitude, freq = signal.freq)
+    reset_signal(; signal=signal, amplitude=signal.amplitude, freq=signal.freq)
     @show signal
     #  ======= construct prob and solve
     prob = ODEProblem(model, u0map, tspan, pmap)
@@ -213,77 +217,77 @@ end
 
 
 
-function single_solve_plot(;model = model, signal = signal::Signal, type = "pulsatile", title = "on")
+function single_solve_plot(; model=model, signal=signal::Signal, type="pulsatile", title="on")
     # ======= make adjustment for the signal
-        # if signal.freq != 0
-        #     signal.phase = 3*pi/2 - signal.freq*signal.T_init
-        #     period = 2pi/signal.freq
-        #     num_cycle= signal.ΔT_Dll4_ref/(period)
-        #     if floor(num_cycle) < 1.0
-        #         @show signal.ΔT = num_cycle* period
-        #     else
-        #         @show signal.ΔT =  floor(num_cycle)* period  - 0.01
-        #     end 
-        #     # signal.ΔT = floor(num_cycle)* period  - 0.01
-        #     signal.tspan = (0, signal.T_init + signal.ΔT + signal.T_init)
-        #     @show signal
-        # else signal.freq == 0.0
-        #     signal.phase = 0.0
-        # end
-        # dump(signal)
+    # if signal.freq != 0
+    #     signal.phase = 3*pi/2 - signal.freq*signal.T_init
+    #     period = 2pi/signal.freq
+    #     num_cycle= signal.ΔT_Dll4_ref/(period)
+    #     if floor(num_cycle) < 1.0
+    #         @show signal.ΔT = num_cycle* period
+    #     else
+    #         @show signal.ΔT =  floor(num_cycle)* period  - 0.01
+    #     end 
+    #     # signal.ΔT = floor(num_cycle)* period  - 0.01
+    #     signal.tspan = (0, signal.T_init + signal.ΔT + signal.T_init)
+    #     @show signal
+    # else signal.freq == 0.0
+    #     signal.phase = 0.0
+    # end
+    # dump(signal)
     # reset_signal(; signal = signal, amplitude=signal.amplitude, freq=signal.freq)
     # ======= make adjustment for the signal
-    u0map, pmap, p, tspan, ts, cb, sol = single_solve(;model = model, signal = signal)
+    u0map, pmap, p, tspan, ts, cb, sol = single_solve(; model=model, signal=signal)
     # println("ts:",ts)
     @show pmap
-    @show t_switching  = switching_time(;sol = sol, pulse_period = signal.T_init:0.1:signal.T_init + signal.ΔT , idx = [6,9], return_plot = false)
-    t_switching = round(t_switching - signal.T_init, digits = 2)
+    @show t_switching = switching_time(; sol=sol, pulse_period=signal.T_init:0.1:signal.T_init+signal.ΔT, idx=[6, 9], return_plot=false)
+    t_switching = round(t_switching - signal.T_init, digits=2)
     if title == "on"
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            title = "A=$(signal.amplitude), freq=$(signal.freq), ST=$t_switching",
-            titlefont=font(10,"Arial"),
-            dpi = 500)
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            lw=2,
+            xlabel="Time", ylabel="Concentration",
+            foreground_color_legend=nothing,
+            title="A=$(signal.amplitude), freq=$(signal.freq), ST=$t_switching",
+            titlefont=font(10, "Arial"),
+            dpi=500)
     elseif title == "off"
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            lw=2,
+            xlabel="Time", ylabel="Concentration",
+            foreground_color_legend=nothing,
             # title = "A : $amplitude, freq = $freq, switch time : $t_switching",
-            dpi = 500)
-        end
+            dpi=500)
+    end
     tt = ts[1]:0.01:ts[2]
     if signal.freq == 0
         plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, signal.amplitude, 0],
-        label = "Sustainable Input", seriestype = :steppre, line = (:dashdot, 2), alpha = 0.8,
-        # ylims = [0, 400],
-        fill = (0, 0.3, :blue), color = "black", dpi = 300)
+            label="Sustainable Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
+            # ylims = [0, 400],
+            fill=(0, 0.3, :blue), color="black", dpi=300)
         return plt
     elseif signal.freq != 0
         if type == "pulsatile"
             pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
-            plot!(plt, tt, pulse_signal.(tt, signal.amplitude, signal.freq, signal.phase ),
-                label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+            plot!(plt, tt, pulse_signal.(tt, signal.amplitude, signal.freq, signal.phase),
+                label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             return plt
-        elseif  type =="bump"
+        elseif type == "bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
-            plot!(plt, tt, bump_signal.(tt, signal.amplitude, signal.freq, signal.phase ),
-                label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+            plot!(plt, tt, bump_signal.(tt, signal.amplitude, signal.freq, signal.phase),
+                label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             return plt
         end
     end
 end
 
 
-function remake_prob(model, u0map, tspan, p ; prc2 = 0.4, mute_parameter_disp = false)
+function remake_prob(model, u0map, tspan, p; prc2=0.4, mute_parameter_disp=false)
     if mute_parameter_disp == false
         @show p
         p[5] = prc2
@@ -299,24 +303,24 @@ end
 
 
 # make animation
-function anim_prc2_changing(range; model = model, u0 = u0, tspan = tspan, p = p, cb = cb, ts= ts)
+function anim_prc2_changing(range; model=model, u0=u0, tspan=tspan, p=p, cb=cb, ts=ts)
     anim = @animate for prc2 ∈ range
-        prob = remake_prob(model, u0, tspan, p; prc2 = prc2)
-        @time sol = solve(prob, Rosenbrock23(), callback = cb, tstops = ts)
+        prob = remake_prob(model, u0, tspan, p; prc2=prc2)
+        @time sol = solve(prob, Rosenbrock23(), callback=cb, tstops=ts)
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 1.5,
-            xlabel = "Time", ylabel = "Concentration",
-            title = "PRC2 rate : $prc2",
-            dpi = 500)
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            lw=1.5,
+            xlabel="Time", ylabel="Concentration",
+            title="PRC2 rate : $prc2",
+            dpi=500)
     end
-    return gif(anim, fps = 1)
+    return gif(anim, fps=1)
 end
 
 
 # ------ Find the switching time
-function switching_time(;sol = sol, pulse_period = 1.0:0.1:300, idx = [6,9], return_plot = true)
-    ∇_1(t, idx)= sol(t, Val{1}, idxs= idx)
+function switching_time(; sol=sol, pulse_period=1.0:0.1:300, idx=[6, 9], return_plot=true)
+    ∇_1(t, idx) = sol(t, Val{1}, idxs=idx)
     # plot(∇_1(pulse_period, idx))
     max_value, max_pos = findmax(∇_1(pulse_period, idx))
     t_max_id = max_pos[2]
@@ -335,29 +339,29 @@ end
 
 
 ## =========================== reset signal =================
-function reset_signal(;signal::Signal, tspan = (0.0, 600.0), amplitude = 100, freq  = 0.1, T_init = 100, ΔT_Dll4_ref = 150)
+function reset_signal(; signal::Signal, tspan=(0.0, 600.0), amplitude=100, freq=0.1, T_init=100, ΔT_Dll4_ref=150)
     # signal.db_idx = db_idx # ---- no need for to state db_idx
     # signal.tspan = tspan
     signal.amplitude = amplitude
     signal.freq = freq
     signal.T_init = T_init
-    signal.phase = 3*pi/2 - signal.freq*signal.T_init # 🔴reset phase
+    signal.phase = 3 * pi / 2 - signal.freq * signal.T_init # 🔴reset phase
     signal.ΔT_Dll4_ref = ΔT_Dll4_ref
     if signal.freq == 0.0
-        period = 2pi/10^-5
+        period = 2pi / 10^-5
     elseif signal.freq != 0.0
-        period = 2pi/signal.freq
+        period = 2pi / signal.freq
     end
-    num_cycle= signal.ΔT_Dll4_ref/(period)
+    num_cycle = signal.ΔT_Dll4_ref / (period)
     if floor(num_cycle) < 1.0
-        signal.ΔT = num_cycle* period
-        println("ΔT is :\n", signal.ΔT )
+        signal.ΔT = num_cycle * period
+        println("ΔT is :\n", signal.ΔT)
     else
-        signal.ΔT =  floor(num_cycle)* period  - 0.01
-        println("ΔT is :\n", signal.ΔT )
-    end 
+        signal.ΔT = floor(num_cycle) * period - 0.01
+        println("ΔT is :\n", signal.ΔT)
+    end
     signal.tspan = (0, signal.T_init + signal.ΔT + signal.T_init)
-    return signal 
+    return signal
 end
 
 
@@ -383,7 +387,7 @@ Note: T_init, ΔT, tspan will take from the Environment, and they are printed ou
 A_ω_ϕ_st_relation(;amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301)
 ```
 """
-function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301, T_init = 100, ΔT_Dll4_ref = 100, tspan_rt = 4, prc2 = "NA",mute_parameter_disp = true)
+function A_ω_ϕ_st_relation(; model=model, amplitude_range=100:20:300, freq_range=0:0.01:0.4, db_idx=301, T_init=100, ΔT_Dll4_ref=100, tspan_rt=4, prc2="NA", mute_parameter_disp=true)
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
@@ -398,27 +402,27 @@ function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_
             signal.tspan = tspan
             signal.amplitude = amplitude
             signal.freq = freq_i
-            signal.phase = 3*pi/2 - signal.freq*signal.T_init
+            signal.phase = 3 * pi / 2 - signal.freq * signal.T_init
             signal.T_init = T_init
             signal.ΔT_Dll4_ref = ΔT_Dll4_ref
-            period = 2pi/signal.freq
-            num_cycle= signal.ΔT_Dll4_ref/(period)
+            period = 2pi / signal.freq
+            num_cycle = signal.ΔT_Dll4_ref / (period)
             if floor(num_cycle) < 1.0
-                @show signal.ΔT = num_cycle* period
+                @show signal.ΔT = num_cycle * period
             else
-                @show signal.ΔT =  floor(num_cycle)* period  - 0.01
-            end 
+                @show signal.ΔT = floor(num_cycle) * period - 0.01
+            end
 
-            _, _, _, _, ts, _, single_sol = single_solve(; model=model, signal = signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
-            t_switching = switching_time(; sol = single_sol, pulse_period = signal.T_init:0.1:signal.T_init+signal.ΔT, idx = [6, 9], return_plot = false)
-            check = check_switching(single_sol,ts,tspan)
-        
+            _, _, _, _, ts, _, single_sol = single_solve(; model=model, signal=signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+            t_switching = switching_time(; sol=single_sol, pulse_period=signal.T_init:0.1:signal.T_init+signal.ΔT, idx=[6, 9], return_plot=false)
+            check = check_switching(single_sol, ts, tspan)
+
             if check == -1
                 push!(switch_time, t_switching)
                 append!(switch_amplitude, amplitude)
                 append!(switch_frequency, freq_i)
                 # append!(switch_phase, phase)
-        
+
                 # plt = plot(single_sol,
                 # # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
                 # vars = [ 6, 9], # [H4,H27]
@@ -428,19 +432,19 @@ function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_
                 # # ylims = [0,500],
                 # title = "A : $amplitude, freq = $freq_i, switch time : $t_switching",
                 # dpi = 300)
-        
+
             end
-            
+
         end
     end
-    A_ω_ϕ_st_database = DataFrame(freq = switch_frequency, amp = switch_amplitude, stime = switch_time)
+    A_ω_ϕ_st_database = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time)
     return A_ω_ϕ_st_database
 end
 
 
 # end
 
-function df4d_sub_gen(df4d; fix_phase = true, fix_amp = true, amplitude_select = rand(unique(df4d.amp)))
+function df4d_sub_gen(df4d; fix_phase=true, fix_amp=true, amplitude_select=rand(unique(df4d.amp)))
     if fix_phase == true
         df4d_phase_0 = filter(row -> row.phase in [0], df4d)
         df4d_phase_1 = filter(row -> row.phase in [1], df4d)
@@ -458,7 +462,7 @@ end
 
 
 
-function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT = 100, amplitude_select = false, palette = :RdYlBu_6, save = false)
+function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, save=false)
     @show db_idx
     if isempty(amplitude_select) == false
         df4d_phase_0_amp_select = filter(row -> row.amp in amplitude_select, df4d_phase_0)
@@ -467,15 +471,15 @@ function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT = 100, amplitude_select = f
     plt = @df df4d_phase_0_amp_select plot(
         :freq,
         :stime,
-        group =  :amp,
-        palette = palette,
+        group=:amp,
+        palette=palette,
         # palette = Symbol("RdYlBu_"*"$color_catg"),
-        m = (2, 4),
-        legend_title = "Amplitude",
-        legend_position = :outertopright,
+        m=(2, 4),
+        legend_title="Amplitude",
+        legend_position=:outertopright,
         # xlabel = "Switching Amplitude",
         # ylabel = "Switching Frequency"
-        dpi = 500,
+        dpi=500,
         # title = "Amplitude = 100"
         # bg = RGB(0.2, 0.2, 0.5)
     )
@@ -501,7 +505,7 @@ end
 #     @show period
 #     num = floor(Int, ΔT_Dll4_ref/period)
 #     @show num
-    
+
 #     # set poisson intervals between pulses
 #     if relax_to_period == true
 #         relax_mean = pulse_width
@@ -509,7 +513,7 @@ end
 #     elseif relax_to_period == false
 #         poisson_interval = rand(Poisson(relax_mean), num)
 #     end 
-    
+
 
 #     pulse_seq = []
 #     for i in 1:length(poisson_interval)
@@ -527,17 +531,17 @@ end
 function generate_poisson_pulses(freq, initial_time, max_time)
     pulses = [] # initialize the pulses with the initial time
     running_sum = initial_time # update the running sum
-    pulse_width = period = 2pi/freq # set the pulse width equals to the period
+    pulse_width = period = 2pi / freq # set the pulse width equals to the period
     # @show period
     poisson_mean = pulse_width
     poisson = Poisson(poisson_mean) # create a Poisson distribution with the given mean
-    
+
     # generate pulses and intervals until the running sum reaches max_time
     while running_sum < max_time
         if max_time - initial_time < period
             push!(pulses, [initial_time, max_time])
             break
-        elseif  max_time - initial_time >= period
+        elseif max_time - initial_time >= period
             # generate a random interval from the Poisson distribution
             interval = rand(poisson)
             push!(pulses, running_sum .+ [0, pulse_width])
@@ -550,17 +554,17 @@ function generate_poisson_pulses(freq, initial_time, max_time)
     end
     if pulses[end][2] > max_time
         pulses = pulses[1:end-1]
-    end 
+    end
     return pulses
 end
 
 
 function heaviside(t)
-   0.5 * (sign(t) + 1)
+    0.5 * (sign(t) + 1)
 end
 
 function interval(t, a, b)
-   heaviside(t-a) - heaviside(t-b)
+    heaviside(t - a) - heaviside(t - b)
 end
 
 function compose_pulses(t, intervals)
@@ -576,8 +580,8 @@ Model Description:
 For a given frequency, `generate_poisson_pulses` will generate a instance of poisson pulses sequence
 in the given duration of signal. Each model loading is associated with a fixed pulse sequence.
 """
-function Load_poisson_model(freq,T_init,ΔT)
-    single_instance_sequence = generate_poisson_pulses(freq,T_init,T_init+ΔT)
+function Load_poisson_model(freq, T_init, ΔT)
+    single_instance_sequence = generate_poisson_pulses(freq, T_init, T_init + ΔT)
     # @show single_instance_sequence
     FR(t) = compose_pulses(t, single_instance_sequence) # each freq has a unique pattern
     # @register_symbolic FR(t)
@@ -595,13 +599,13 @@ function Load_poisson_model(freq,T_init,ΔT)
         k, H27 --> H27 + KDM5A                # KDM5A is enhenced by H27 mark
         δ, (PRC2, KDM5A, KDM6A, KMT) --> ∅                    # Degradation of histone reader and writers
         α1, ∅ --> (KDM6A, KMT, PRC2, KDM5A)
-    end k0 k1 k2 d m p k pp kk δ α1 A 
+    end k0 k1 k2 d m p k pp kk δ α1 A
     return model_poisson_pulse, single_instance_sequence
-end 
+end
 
 
 ##  ======================================================= single solve for poisson pulses =============================
-function single_solve_poisson(;signal = signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+function single_solve_poisson(; signal=signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
     db_idx = signal.db_idx
     tspan = signal.tspan
     T_init = signal.T_init
@@ -610,8 +614,8 @@ function single_solve_poisson(;signal = signal::Signal, prc2=prc2, mute_paramete
     amplitude = signal.amplitude
 
     # ====== each time loading poisson model will generate a sequence of poisson pulses within [T_init, T_init + ΔT]
-    model, single_instance_sequence = Load_poisson_model(freq, T_init, ΔT) 
-    p = vcat([collect(parameter_set[db_idx, :]),  0.0]...)
+    model, single_instance_sequence = Load_poisson_model(freq, T_init, ΔT)
+    p = vcat([collect(parameter_set[db_idx, :]), 0.0]...)
     pmap = parameters(model) .=> p
     u0 = collect(initial_condition[db_idx, :])
     u0map = species(model) .=> u0
@@ -620,7 +624,7 @@ function single_solve_poisson(;signal = signal::Signal, prc2=prc2, mute_paramete
     if prc2 != "NA"
         prob1 = remake_prob(model, u0map, signal.tspan, p; prc2=prc2, mute_parameter_disp=mute_parameter_disp)
     end
-    sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts);
+    sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
     return u0map, pmap, p, signal.tspan, ts, cb, sol
 end
 
@@ -629,7 +633,7 @@ end
 
 
 # 🍕 ======== generate the data set for poisson pulses ======
-function A_ω_ϕ_st_relation_poisson(; amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301, T_init = 100, ΔT_Dll4_ref = 100, tspan_rt = 4, prc2 = "NA",mute_parameter_disp = true)
+function A_ω_ϕ_st_relation_poisson(; amplitude_range=100:20:300, freq_range=0:0.01:0.4, db_idx=301, T_init=100, ΔT_Dll4_ref=100, tspan_rt=4, prc2="NA", mute_parameter_disp=true)
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
@@ -655,16 +659,16 @@ function A_ω_ϕ_st_relation_poisson(; amplitude_range = 100:20:300, freq_range 
             #     @show signal.ΔT =  floor(num_cycle)* period  - 0.01
             # end 
 
-            _, _, _, _, ts, _, single_sol_poisson = single_solve_poisson(; signal = signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
-            t_switching = switching_time(; sol = single_sol_poisson, pulse_period = signal.T_init:0.1:signal.T_init+signal.ΔT, idx = [6, 9], return_plot = false)
-            check = check_switching(single_sol_poisson,ts,tspan)
-        
+            _, _, _, _, ts, _, single_sol_poisson = single_solve_poisson(; signal=signal::Signal, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+            t_switching = switching_time(; sol=single_sol_poisson, pulse_period=signal.T_init:0.1:signal.T_init+signal.ΔT, idx=[6, 9], return_plot=false)
+            check = check_switching(single_sol_poisson, ts, tspan)
+
             if check == -1
                 push!(switch_time, t_switching)
                 append!(switch_amplitude, amplitude)
                 append!(switch_frequency, freq_i)
                 # append!(switch_phase, phase)
-        
+
                 # plt = plot(single_sol,
                 # # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
                 # vars = [ 6, 9], # [H4,H27]
@@ -674,19 +678,19 @@ function A_ω_ϕ_st_relation_poisson(; amplitude_range = 100:20:300, freq_range 
                 # # ylims = [0,500],
                 # title = "A : $amplitude, freq = $freq_i, switch time : $t_switching",
                 # dpi = 300)
-        
+
             end
-            
+
         end
     end
-    A_ω_ϕ_st_database_poisson = DataFrame(freq = switch_frequency, amp = switch_amplitude, stime = switch_time)
+    A_ω_ϕ_st_database_poisson = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time)
     return A_ω_ϕ_st_database_poisson
 end
 
 
 
 # ======== two genes comparison and prc comparison =================================
-function Two_Genes_TS_by_Prc2(; model=model, signal1, signal2, prc2 =0.1, tspan_rt=4, title_on=true, legend_title_on=true, vars_to_show=[4, 5, 6, 9], type="pulsatile")
+function Two_Genes_TS_by_Prc2(; model=model, signal1, signal2, prc2=0.1, tspan_rt=4, title_on=true, legend_title_on=true, vars_to_show=[4, 5, 6, 9], type="pulsatile")
     # ======== Gene 1 with Dll4 sustainable signal
     # sol_gene1, ts1 = remake_prob(; model = model, amplitude = amplitude1, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
     p = vcat([collect(parameter_set[signal1.db_idx, :]), signal1.freq, 0.0, signal1.phase]...)
@@ -695,9 +699,9 @@ function Two_Genes_TS_by_Prc2(; model=model, signal1, signal2, prc2 =0.1, tspan_
     u0map = species(model) .=> u0
     @show u0map
     # ======= since the gene1 part is for Dll4, so we set the signal1.freq to 0.0
-    reset_signal(; signal = signal1, amplitude=signal1.amplitude, freq=0)
-    @show prob1 = remake_prob(model, u0map, signal1.tspan, p; prc2=prc2, mute_parameter_disp=false);
-    u0map, pmap, p, tspan, ts1, cb, sol_gene1 = single_solve(; model=model_pulsatile, signal=signal1);
+    reset_signal(; signal=signal1, amplitude=signal1.amplitude, freq=0)
+    @show prob1 = remake_prob(model, u0map, signal1.tspan, p; prc2=prc2, mute_parameter_disp=false)
+    u0map, pmap, p, tspan, ts1, cb, sol_gene1 = single_solve(; model=model_pulsatile, signal=signal1)
 
     @show t_switching1 = switching_time(; sol=sol_gene1, pulse_period=signal1.T_init:0.1:signal1.T_init+signal1.ΔT, idx=[6, 9], return_plot=false)
     t_switching1 = t_switching1 - signal1.T_init
@@ -749,7 +753,7 @@ function Two_Genes_TS_by_Prc2(; model=model, signal1, signal2, prc2 =0.1, tspan_
         fill=(0, 0.3, :blue), color="black", dpi=500)
 
 
-    
+
     # ======= Gene 2 with Dll1 pulsatile signal
     osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
     p = vcat([collect(parameter_set[signal2.db_idx, :]), signal2.freq, 0.0, signal2.phase]...)
@@ -758,9 +762,9 @@ function Two_Genes_TS_by_Prc2(; model=model, signal1, signal2, prc2 =0.1, tspan_
     u0map = species(model) .=> u0
     @show u0map
     # ======= since the gene1 part is for Dll1, so we let the frequency to be the signal2.freq 
-    reset_signal(; signal = signal2, amplitude=signal2.amplitude, freq=signal2.freq)
-    @show prob2 = remake_prob(model, u0map, signal2.tspan, p; prc2=prc2, mute_parameter_disp=false);
-    u0map, pmap, p, tspan, ts1, cb, sol_gene2 = single_solve(; model=model_pulsatile, signal=signal2);
+    reset_signal(; signal=signal2, amplitude=signal2.amplitude, freq=signal2.freq)
+    @show prob2 = remake_prob(model, u0map, signal2.tspan, p; prc2=prc2, mute_parameter_disp=false)
+    u0map, pmap, p, tspan, ts1, cb, sol_gene2 = single_solve(; model=model_pulsatile, signal=signal2)
 
     @show t_switching2 = switching_time(; sol=sol_gene2, pulse_period=signal2.T_init:0.1:signal2.T_init+signal2.ΔT, idx=[6, 9], return_plot=false)
     t_switching2 = t_switching2 - signal2.T_init

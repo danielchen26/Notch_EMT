@@ -165,7 +165,8 @@ end
 
 function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_init, ΔT, type = "pulsatile", title = "on")
     tspan = (0.0,  3*ΔT)
-
+    #! FIXME: test to reset the phase
+    phase = 3pi/2 - freq*T_init # TODO: This is just a test
     u0map, pmap, p, tspan, ts, cb, sol = single_solve(;model = model, db_idx = db_idx, freq = freq, phase = phase, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan)
     @show pmap
     @show t_switching  = switching_time(;sol = sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
@@ -197,15 +198,15 @@ function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_ini
     elseif freq != 0
         if type == "pulsatile"
             pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
-            plot!(plt, tt, pulse_signal.(tt, amplitude, freq, 0.0),
+            plot!(plt, tt, pulse_signal.(tt, amplitude, freq, phase),
                 label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
                 # ylims = [0, 700],
                 fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
             return plt
         elseif  type =="bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
-            plot!(plt, tt, bump_signal.(tt, amplitude, freq, 0.0),
-                label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+            plot!(plt, tt, bump_signal.(tt, amplitude, freq, phase),
+                label = "Bump Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
                 # ylims = [0, 700],
                 fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
             return plt

@@ -211,11 +211,18 @@ plt_bump = single_solve_plot(; model=model, db_idx=49, phase=0, freq=0.5, amplit
 plt_2model = plot(plt_pulsatile, plt_bump, layout=(2, 1))
 
 ##
-signal_type = "pulsatile"
-for freq = 0:0.01:0.34
-    plt1 = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=0, amplitude=20, T_init=50, ΔT=100, type=signal_type)
-    plt2 = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=freq, amplitude=70, T_init=50, ΔT=100, type=signal_type)
-    plt = plot(plt1, plt2, layout=(2, 1))
+
+
+
+
+
+## ! testing this now =================================
+for freq_i = 0:0.01:1
+    # plt1 = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=0, amplitude=20, T_init=50, ΔT=100, type="pulsatile")
+    plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=freq_i, amplitude=65.0, T_init=T_init, ΔT=80, type="pulsatile")
+    # plt2 = single_solve_plot(; model=model_bump, db_idx=49, phase=0, freq=freq, amplitude=70, T_init=50, ΔT=100, type="bump")
+    plt_bump = single_solve_plot(; model=model_bump, db_idx=49, phase=0, freq=freq_i, amplitude=65.0, T_init=T_init, ΔT=80, type="bump")
+    plt = plot(plt_pulsatile, plt_bump, layout=(2, 1))
     display(plt)
 end
 

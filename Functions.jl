@@ -148,7 +148,10 @@ function save_init_param(parameter_set, initial_condition, id, path)
 end
 
 # single solve, given a instance in database specified by db_idx.
-function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT, tspan, prc2 = "NA", mute_parameter_disp=false) #🍏🔴added prc2 changing option
+function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT, tspan, prc2 = "NA", mute_parameter_disp=false, phase_reset = true) #🍏🔴added prc2 changing option
+    if phase_reset == true && freq != 0.0
+        phase = 3pi/2 - freq*T_init
+    end 
     p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
     pmap = parameters(model) .=> p
     u0 = collect(initial_condition[db_idx, :])

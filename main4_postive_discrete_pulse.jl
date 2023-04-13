@@ -70,7 +70,7 @@ tspan = (0.0, 350.0);
 @show db[db_idx, p_names]
 model = model_pulsatile
 
-u0map, pmap, p, tspan, ts, cb, sol = single_solve(; db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan)
+u0map, pmap, p, tspan, ts, cb, sol = single_solve(; db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan,phase_reset = true)
 plt = plot(sol, vars=[4, 5, 6, 9], lw=1.5, xlabel="Time", ylabel="Concentration",  dpi=500)
 
 

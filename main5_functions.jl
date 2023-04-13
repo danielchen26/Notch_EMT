@@ -191,6 +191,7 @@ function single_solve(; model=model, signal=signal::Signal, prc2="NA", mute_para
         prob1 = remake_prob(model, u0map, signal.tspan, p; prc2=prc2, mute_parameter_disp=mute_parameter_disp)
     end
     sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
+    # sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts, abstol=1e-10, reltol=1e-8)
     # sol = solve(prob1, TRBDF2(), callback=cb, tstops=ts);
     return u0map, pmap, p, signal.tspan, ts, cb, sol
 end

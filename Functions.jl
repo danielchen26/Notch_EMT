@@ -163,10 +163,12 @@ function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT
 end
 
 
-function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_init, ΔT, type = "pulsatile", title = "on")
+function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_init, ΔT, type = "pulsatile", title = "on", phase_reset = true)
     tspan = (0.0,  3*ΔT)
-    #! FIXME: test to reset the phase
-    phase = 3pi/2 - freq*T_init # TODO: This is just a test
+    #! reset the phase
+    if phase_reset == true
+        phase = 3pi/2 - freq*T_init 
+    end
     u0map, pmap, p, tspan, ts, cb, sol = single_solve(;model = model, db_idx = db_idx, freq = freq, phase = phase, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan)
     @show pmap
     @show t_switching  = switching_time(;sol = sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
@@ -283,8 +285,8 @@ function switching_time(;sol = sol, pulse_period = 1.0:0.1:300, idx = [6,9], ret
 end
 
 
-
-function Two_Genes_TS_by_Prc2(; model = model, id1 = 592, id2 = 49, id2_freq = 0.2, phase2 = 0.0, amplitude1 = 130, amplitude2 = 130, prc2 = 0.1, T_init = 100, ΔT = 100, tspan_rt = 4, title_on = true, legend_title_on = true, vars_to_show = [4, 5, 6, 9], type = "pulsatile")
+#! fixed the phase2 for the pulsalatile signle for gene 2
+function Two_Genes_TS_by_Prc2(; model = model, id1 = 592, id2 = 49, id2_freq = 0.2, phase2 = 0.0, amplitude1 = 130, amplitude2 = 130, prc2 = 0.1, T_init = 100, ΔT = 100, tspan_rt = 4, title_on = true, legend_title_on = true, vars_to_show = [4, 5, 6, 9], type = "pulsatile", phase2_reset = true )
     # ======== Gene 1 with Dll4 sustainable signal
     sol_gene1, ts1 = remake_solve_prob_by_ID(; model = model, db_idx = id1, amplitude = amplitude1, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
     @show t_switching1 = switching_time(; sol = sol_gene1, pulse_period = T_init:0.1:T_init+ΔT, idx = [6, 9], return_plot = false)
@@ -336,6 +338,9 @@ function Two_Genes_TS_by_Prc2(; model = model, id1 = 592, id2 = 49, id2_freq = 0
         fill = (0, 0.3, :blue), color = "black", dpi = 500)
     # ======= Gene 2 with Dll1 pulsatile signal
     osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
+    if phase2_reset == true
+        phase2 = 3pi/2 -id2_freq*T_init #! fixed the phase2 for the pulsatile signle for gene 2
+    end
     sol_gene2, ts2 = remake_solve_prob_by_ID(; model = model, db_idx = id2, freq = id2_freq, phase = phase2, amplitude = amplitude2, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
     @show t_switching2 = switching_time(; sol = sol_gene2, pulse_period = T_init:0.1:T_init+ΔT, idx = [6, 9], return_plot = false)
     t_switching2 = t_switching2 - T_init

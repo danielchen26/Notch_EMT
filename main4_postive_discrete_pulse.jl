@@ -216,7 +216,7 @@ plt_2model = plot(plt_pulsatile, plt_bump, layout=(2, 1))
 
 
 
-## ! testing this now =================================
+## ! The signal starts at the T_init =================================
 for freq_i = 0:0.01:1
     # plt1 = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=0, amplitude=20, T_init=50, ΔT=100, type="pulsatile")
     plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=freq_i, amplitude=65.0, T_init=T_init, ΔT=80, type="pulsatile")
@@ -237,7 +237,7 @@ end
 
 ## ======= Two plots Dll4 vs Dll1 for gene id:49 ====
 single_gene_id = 49
-id2_freq = 0.25
+id2_freq = 0.15
 phase2 = 5
 amplitude1 = 62
 amplitude2 = 31
@@ -293,6 +293,9 @@ end
 for id = 1:100
     find_id(id)
 end
+
+
+
 ## ======= Two plots Dll4 vs Dll1 for gene id:592 ====
 single_gene_id = 592
 id2_freq = 0.25
@@ -309,7 +312,8 @@ plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_592 =
         id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
         amplitude2=amplitude2, prc2=prc2,
         T_init=T_init, ΔT=ΔT, title_on=false, legend_title_on=false,
-        type="bump") #🔴 specify the type
+        type="bump",
+        phase2_reset = false) #🔴 specify the type
 plt_gene2_Dll4
 plt_gene2_Dll1
 plt_2genes_compare_id_592

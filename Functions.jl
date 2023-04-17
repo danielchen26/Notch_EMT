@@ -169,7 +169,7 @@ end
 function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_init, ΔT, type = "pulsatile", title = "on", phase_reset = true)
     tspan = (0.0,  3*ΔT)
     #! reset the phase
-    if phase_reset == true
+    if phase_reset == true && freq != 0.0
         phase = 3pi/2 - freq*T_init 
     end
     u0map, pmap, p, tspan, ts, cb, sol = single_solve(;model = model, db_idx = db_idx, freq = freq, phase = phase, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan)
@@ -196,7 +196,7 @@ function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_ini
     tt = ts[1]:0.01:ts[2]
     if freq == 0
         plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, amplitude, 0],
-        label = "Sustainable Input", seriestype = :steppre, line = (:dashdot, 2), alpha = 0.8,
+        label = "Sustained Input", seriestype = :steppre, line = (:dashdot, 2), alpha = 0.8,
         # ylims = [0, 400],
         fill = (0, 0.3, :blue), color = "black", dpi = 300)
         return plt

@@ -1,7 +1,7 @@
 # This file is to explore the pulsatile effects on epigenetic switching.
 ## ====================== Loading packages and data library==========================
 using DifferentialEquations
-using Plots
+using Plots;gr(fontfamily = "Helvetica") 
 using Catalyst
 using Catalyst: parameters
 
@@ -61,7 +61,7 @@ rn_latex, ode_latex = ode_latex_gen(model_pulsatile)
 ## ============================== single run for the model =============================
 # 🔴
 db_idx = 592
-freq = 0;
+freq = 0.;
 phase = 0;
 amplitude = 220;
 T_init = 100;
@@ -83,13 +83,14 @@ plt = plot(sol,
     xlabel="Time", ylabel="Concentration",
     title="PRC2 rate : 0.4",
     dpi=500)
-anim_prc2_changing(0:0.1:0.8, tspan=[0, 350], u0=u0map)
+anim_prc2 = anim_prc2_changing(0:0.1:0.8, tspan=[0, 350], u0=u0map)
+
 
 
 
 
 ## ===========================================================================================
-# --------- Single run with phase for paper plots
+# --------- Single run with phase unreseted #? This is just a test
 phase = 0
 freq = 0.2
 amplitude = 298
@@ -99,7 +100,7 @@ tspan = (0.0, 3 * ΔT)
 db_idx = 592 # gene 1 with Dll4 const A, no matter how long the signal is giving to the system, no switch
 # db_idx =49 # gene 2 with Dll1
 
-## test---- solve step by step
+# test---- solve step by step
 p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
 model = model_pulsatile
 pmap = parameters(model) .=> p
@@ -117,7 +118,7 @@ plot(sol)
 
 
 
-
+## ===========================================================================================
 u0map, pmap, p, tspan, ts, cb, sol = single_solve(; model=model_pulsatile, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan);
 
 @show t_switching = switching_time(; sol=sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
@@ -228,7 +229,7 @@ end
 
 ## For fixed frequency ω = 0.5, how does changing amplitude need additional pulses.
 for amp2 = 10:1:100
-    plt1 = single_solve_plot(; db_idx=49, phase=0, freq=0, amplitude=18, T_init=50, ΔT=100, type=signal_type)
+    plt1 = single_solve_plot(; db_idx=49, phase=0, freq=0, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
     plt2 = single_solve_plot(; db_idx=49, phase=0, freq=0.3, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
     plt = plot(plt1, plt2, layout=(2, 1))
     display(plt)

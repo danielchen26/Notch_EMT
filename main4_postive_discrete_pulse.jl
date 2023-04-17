@@ -227,13 +227,15 @@ for freq_i = 0:0.01:1
     display(plt)
 end
 
-## For fixed frequency ω = 0.5, how does changing amplitude need additional pulses.
+## comparing Dll4 vs Dll1 bump signal 
 for amp2 = 10:1:100
     plt1 = single_solve_plot(; db_idx=49, phase=0, freq=0, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
     plt2 = single_solve_plot(; db_idx=49, phase=0, freq=0.3, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
     plt = plot(plt1, plt2, layout=(2, 1))
     display(plt)
 end
+
+
 
 
 ## ======= Two plots Dll4 vs Dll1 for gene id:49 ====

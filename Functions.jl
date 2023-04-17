@@ -173,24 +173,30 @@ function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_ini
         phase = 3pi/2 - freq*T_init 
     end
     u0map, pmap, p, tspan, ts, cb, sol = single_solve(;model = model, db_idx = db_idx, freq = freq, phase = phase, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan)
-    @show pmap
-    @show t_switching  = switching_time(;sol = sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
+    # @show pmap
+    check = check_switching(sol, ts, tspan)
+    println( check == -1 ? "Histone states swithced" : "NO swithing")
+    t_switching  = switching_time(;sol = sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
+    t_switching = round(t_switching - T_init, digits = 2)
+    @show t_switching
     if title == "on"
         plt = plot(sol,
             vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
             lw = 2,
             xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            title = "A=$amplitude, freq=$freq, ST=$t_switching",
-            titlefont=font(10,"Arial"),
+            foreground_color_legend = nothing, 
             dpi = 500)
+        check == -1 ? 
+            title!(plt, " A=$amplitude, freq=$freq, ST=$t_switching",
+            titlefont=font(10,"Arial")) : 
+            title!(plt, " A=$amplitude, freq=$freq, ST= No Swithing", 
+            titlefont=font(10,"Arial"))
     elseif title == "off"
         plt = plot(sol,
             vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
             lw = 2,
             xlabel = "Time", ylabel = "Concentration",
             foreground_color_legend = nothing,
-            # title = "A : $amplitude, freq = $freq, switch time : $t_switching",
             dpi = 500)
         end
     tt = ts[1]:0.01:ts[2]

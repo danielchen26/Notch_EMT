@@ -1,7 +1,9 @@
 # This file is to explore the pulsatile effects on epigenetic switching.
 ## ====================== Loading packages and data library==========================
+using Revise
 using DifferentialEquations
-using Plots;gr(fontfamily = "Helvetica") 
+using Plots;
+gr(fontfamily="Helvetica");
 using Catalyst
 using Catalyst: parameters
 
@@ -9,7 +11,7 @@ using ProgressMeter
 using DataFrames, CSV, Random, Distributions
 using StatsPlots
 using Latexify, Measures, FLoops, LaTeXStrings
-include("./Functions.jl")
+includet("./Functions.jl")
 db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, db_idx = loading_database()
 
 
@@ -53,25 +55,20 @@ model_pulsatile = Import_model(; type=signal_type)
 
 rn_latex, ode_latex = ode_latex_gen(model_pulsatile)
 
-## get a distribution shape function
-# f(A,w,t,ϕ) = A * (abs(cos(w * t + ϕ)))
-# xx = range(.0,stop=20.0,length=500)
-# p1 = plot(xx,f.(10,1,xx,0))
-
 ## ============================== single run for the model =============================
 # 🔴
 db_idx = 592
-freq = 0.;
+freq = 0.0;
 phase = 0;
 amplitude = 220;
-T_init = 100;
+T_init = 0.001;
 ΔT = 100;
 tspan = (0.0, 350.0);
 @show db[db_idx, p_names]
 model = model_pulsatile
 
-u0map, pmap, p, tspan, ts, cb, sol = single_solve(; db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan,phase_reset = true)
-plt = plot(sol, vars=[4, 5, 6, 9], lw=1.5, xlabel="Time", ylabel="Concentration",  dpi=500)
+u0map, pmap, p, tspan, ts, cb, sol = single_solve(; db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, phase_reset=true)
+plt = plot(sol, vars=[4, 5, 6, 9], lw=1.5, xlabel="Time", ylabel="Concentration", dpi=500)
 
 
 ## ====== I want to find if 🔴 changing the prc2 kinetic rate is able to result in early activation
@@ -84,8 +81,6 @@ plt = plot(sol,
     title="PRC2 rate : 0.4",
     dpi=500)
 anim_prc2 = anim_prc2_changing(0:0.1:0.8, tspan=[0, 350], u0=u0map)
-
-
 
 
 
@@ -118,8 +113,8 @@ plot(sol)
 
 
 
-## ===========================================================================================
-u0map, pmap, p, tspan, ts, cb, sol = single_solve(; model=model_pulsatile, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan);
+## ! skip this part ===========================================================================================
+u0map, pmap, p, tspan, ts, cb, sol, phase = single_solve(; model=model_pulsatile, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan);
 
 @show t_switching = switching_time(; sol=sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
 
@@ -197,42 +192,62 @@ plot!(plt, tt, osci_signal.(tt, amplitude, freq, 0.0),
 
 
 
-## ====== Single plot for 1 gene =======
-T_init = 50
+## ====== Single plot for 1 gene comparing pulsatile case vs bump case=======
+T_init = 10.01
 # ======= pulsatile model
 model = model_pulsatile
 signal_type = "pulsatile"
 plt_pulsatile = single_solve_plot(; model=model, db_idx=49, phase=0, freq=0.5, amplitude=65.0, T_init=T_init, ΔT=80, type=signal_type)
-
 # ======== bump model
 model = model_bump
 signal_type = "bump"
 plt_bump = single_solve_plot(; model=model, db_idx=49, phase=0, freq=0.5, amplitude=65.0, T_init=T_init, ΔT=80, type=signal_type)
-
 plt_2model = plot(plt_pulsatile, plt_bump, layout=(2, 1))
-
 ##
 
 
+# write a function to plot 1 gene comparing pulsatile case vs bump case
+function single_solve_plot_pulsatile_bump(; db_idx=49, phase=0, freq=0.5, amplitude=65.0, T_init=0.01, ΔT=100)
+    plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="pulsatile")
+    plt_bump = single_solve_plot(; model=model_bump, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="bump")
+    plot(plt_pulsatile, plt_bump, layout=(2, 1))
+end
 
 
-
-## ! The signal starts at the T_init =================================
-for freq_i = 0:0.01:1
-    # plt1 = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=0, amplitude=20, T_init=50, ΔT=100, type="pulsatile")
-    plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=49, phase=0, freq=freq_i, amplitude=65.0, T_init=T_init, ΔT=80, type="pulsatile")
-    # plt2 = single_solve_plot(; model=model_bump, db_idx=49, phase=0, freq=freq, amplitude=70, T_init=50, ΔT=100, type="bump")
-    plt_bump = single_solve_plot(; model=model_bump, db_idx=49, phase=0, freq=freq_i, amplitude=65.0, T_init=T_init, ΔT=80, type="bump")
-    plt = plot(plt_pulsatile, plt_bump, layout=(2, 1))
+#! Have to set T_init to 0.01 to avoid the discontinuity
+for ΔT ∈ 0.01:10:1000
+    plt = single_solve_plot_pulsatile_bump(ΔT = ΔT, T_init = 0.01)
     display(plt)
 end
 
-## comparing Dll4 vs Dll1 bump signal 
-for amp2 = 10:1:100
-    plt1 = single_solve_plot(; db_idx=49, phase=0, freq=0, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
-    plt2 = single_solve_plot(; db_idx=49, phase=0, freq=0.3, amplitude=amp2, T_init=50, ΔT=100, type=signal_type)
-    plt = plot(plt1, plt2, layout=(2, 1))
+
+
+
+
+## ====== single plot for 1 gene ID 592 ======= Dll4 vs Dll1 within the first the duartiona of pulse given T_init
+T_init = 100.01
+# ======= sustained model
+plt_sustained = single_solve_plot(; model=model_pulsatile, db_idx=592, phase=0, freq=0.0, amplitude=165.0, T_init=T_init, ΔT=50, type="sustained", phase_reset=true)
+# ======= pulsatile model
+plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=592, phase=0, freq=0.010, amplitude=165.0, T_init=T_init, ΔT=50, type="pulsatile", phase_reset=true)
+
+plot(plt_sustained, plt_pulsatile, layout=(2, 1))
+##
+
+
+# * write function for ploting 1 gene ID default to 592 comparing sustained signal vs pulsatile signal.
+function single_solve_plot_sustained_pulsatile(; db_idx=592, phase=0, freq=0.0, amplitude=165.0, T_init=0.01, ΔT=100)
+    plt_sustained = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase = 0.0, freq = 0.0, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="sustained", phase_reset=true)
+    plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="pulsatile", phase_reset=true)
+    plot(plt_sustained, plt_pulsatile, layout=(2, 1))
+end
+
+
+# * showed some freq and amplitude allows pulsatile signal switch states after signal is off (between pulses)
+for freq ∈ 0.01:0.05:1#, amplitude ∈ 165:10:300
+    plt = single_solve_plot_sustained_pulsatile(ΔT = 100, T_init = 0.01, freq = freq)#, amplitude = amplitude)
     display(plt)
+    sleep(0.1)
 end
 
 
@@ -244,10 +259,10 @@ id2_freq = 0.15
 phase2 = 5
 amplitude1 = 62
 amplitude2 = 31
-T_init = 100
+T_init = 0.01
 ΔT = 100
 prc2 = 0.41
-
+plotly()
 plt_gene1_Dll4, plt_gene1_Dll1, plt_2genes_compare_id_49 =
     Two_Genes_TS_by_Prc2(;
         # model = model_bump,
@@ -257,7 +272,9 @@ plt_gene1_Dll4, plt_gene1_Dll1, plt_2genes_compare_id_49 =
         amplitude2=amplitude2, prc2=prc2,
         T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=false,
         vars_to_show=[5, 6, 9], #tspan_rt = 2, # 
-        type="pulsatile") #🔴 specify the type
+        type="pulsatile",
+        # type="bump",
+        phase2_reset=true) #🔴 specify the type
 plt_gene1_Dll4
 plt_gene1_Dll1
 plt_2genes_compare_id_49
@@ -272,39 +289,44 @@ savefig(plt_gene1_Dll1, savepath * "plt2_gene1_Dll1.png")
 
 
 ## ======================== to find index with A = 64, Dll4 switch 
-function find_id(id)
+function find_id(id; type="pulsatile")
     @show id
     single_gene_id = id
     id2_freq = 0.25
     phase2 = 0
     amplitude1 = 65
-    amplitude2 = 65
+    if type == "pulsatile"
+        amplitude2 = amplitude1 / 2
+    elseif type == "bump"
+        amplitude2 = amplitude1
+    end
     T_init = 100
     ΔT = 100
     prc2 = 0.41
 
-    plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_592 =
+    plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id =
         Two_Genes_TS_by_Prc2(; model=model_pulsatile,
             id1=single_gene_id, id2=single_gene_id,
             id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
             amplitude2=amplitude2, prc2=prc2,
             T_init=T_init, ΔT=ΔT, title_on=false, legend_title_on=false,
-            type="bump") #🔴 specify the type
-    title!(plt_2genes_compare_id_592, "id:$id")
-    display(plt_2genes_compare_id_592)
+            type=type)
+    title!(plt_2genes_compare_id, "id:$id")
+    display(plt_2genes_compare_id)
 end
-for id = 1:100
+for id = 100:200
     find_id(id)
+    sleep(0.1)
 end
 
 
 
 ## ======= Two plots Dll4 vs Dll1 for gene id:592 ====
 single_gene_id = 592
-id2_freq = 0.25
+id2_freq = 0.09
 phase2 = 0
-amplitude1 = 65
-amplitude2 = 65
+amplitude1 = 165
+# amplitude2 = 65
 T_init = 100
 ΔT = 100
 prc2 = 0.41
@@ -314,9 +336,9 @@ plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_592 =
         id1=single_gene_id, id2=single_gene_id,
         id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
         amplitude2=amplitude2, prc2=prc2,
-        T_init=T_init, ΔT=ΔT, title_on=false, legend_title_on=false,
-        type="bump",
-        phase2_reset = false) #🔴 specify the type
+        T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true) #🔴 specify the type
 plt_gene2_Dll4
 plt_gene2_Dll1
 plt_2genes_compare_id_592
@@ -392,14 +414,14 @@ db_idx = 49
 # db_idx = 600 # 🍏 paper figure 6
 df4d = A_ω_ϕ_st_relation(; model=model_pulsatile,
     amplitude_range=0:50:300, freq_range=0:0.02:2,
-    ΔT=100, db_idx=db_idx, phase_sample_size = 7)
+    ΔT=100, db_idx=db_idx, phase_sample_size=7)
 
 # df4d = A_ω_ϕ_st_relation(amplitude_range=0:50:300, freq_range=0:0.02:2, db_idx=db_idx)
 
 df4d_phase_0, _, _, df4d_phase_3, _, _, df4d_phase_6, df4d_amp_select = df4d_sub_gen(df4d, amplitude_select=300)
 
-plt_fix_phase_freq_vs_ST = df4d_fix_phase_freq_vs_ST(df4d_phase_0; amplitude_select = [100, 200, 300],palette = cgrad([:goldenrod1,:dodgerblue4,:chartreuse3]), save=true)
-plt_fix_amplitude_freq_vs_ST = df4d_fix_amp_freq_vs_ST(df4d_amp_select; phase_select = [0, 3, 6], palette = cgrad([:goldenrod1,:dodgerblue4,:chartreuse3]), save=true)
+plt_fix_phase_freq_vs_ST = df4d_fix_phase_freq_vs_ST(df4d_phase_0; amplitude_select=[100, 200, 300], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3]), save=true)
+plt_fix_amplitude_freq_vs_ST = df4d_fix_amp_freq_vs_ST(df4d_amp_select; phase_select=[0, 3, 6], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3]), save=true)
 # plt_fix_phase_freq_vs_ST = df4d_fix_phase_freq_vs_ST(df4d_phase_0; save=false)
 # plt_fix_amplitude_freq_vs_ST = df4d_fix_amp_freq_vs_ST(df4d_amp_select; save=false)
 
@@ -905,21 +927,21 @@ df_stack_prc2_set_gene_49 = Gen_df_stack_prc2_increase(; model=model_pulsatile, 
 # ------- plot ω vs. ST for various prc2 with amplitude  = 300
 df_stack_prc2_set_gene_49_fixed_amp = filter(row -> row.amp == 300, df_stack_prc2_set_gene_49)
 df_stack_prc2_set_gene_49_fixed_amp
-plt_id49_amp_300_prc2_set =  @df df_stack_prc2_set_gene_49_fixed_amp plot(
-            :freq,
-            :stime_minimum,
-            group=:prc2,
-            palette=:RdBu_9,
-            m=(0.8, 1.5),
-            # legend_title="Amplitude",
-            legend_position=:outertopright,
-            legendfontsize=5,
-            legendtitlefontsize=5,
-            ylabel="Switching Time",
-            xlabel="Switching Frequency",
-            dpi=500,
-            legend_title="Amplitude = 300, \n PRC2 rate"
-        )
+plt_id49_amp_300_prc2_set = @df df_stack_prc2_set_gene_49_fixed_amp plot(
+    :freq,
+    :stime_minimum,
+    group=:prc2,
+    palette=:RdBu_9,
+    m=(0.8, 1.5),
+    # legend_title="Amplitude",
+    legend_position=:outertopright,
+    legendfontsize=5,
+    legendtitlefontsize=5,
+    ylabel="Switching Time",
+    xlabel="Switching Frequency",
+    dpi=500,
+    legend_title="Amplitude = 300, \n PRC2 rate"
+)
 # savefig(plt_id49_amp_300_prc2_set, "plt_id49_amp_300_prc2_set.png")
 
 
@@ -927,21 +949,21 @@ plt_id49_amp_300_prc2_set =  @df df_stack_prc2_set_gene_49_fixed_amp plot(
 # ------- plot ω vs. ST for various prc2 with amplitude  = 100
 df_stack_prc2_set_gene_49_fixed_amp = filter(row -> row.amp == 100, df_stack_prc2_set_gene_49)
 df_stack_prc2_set_gene_49_fixed_amp
-plt_id49_amp_100_prc2_set =  @df df_stack_prc2_set_gene_49_fixed_amp plot(
-            :freq,
-            :stime_minimum,
-            group=:prc2,
-            palette=:RdBu_9,
-            m=(0.8, 1.5),
-            # legend_title="Amplitude",
-            legend_position=:outertopright,
-            legendfontsize=5,
-            legendtitlefontsize=5,
-            ylabel="Switching Time",
-            xlabel="Switching Frequency",
-            dpi=500,
-            legend_title="Amplitude = 100, \n PRC2 rate"
-        )
+plt_id49_amp_100_prc2_set = @df df_stack_prc2_set_gene_49_fixed_amp plot(
+    :freq,
+    :stime_minimum,
+    group=:prc2,
+    palette=:RdBu_9,
+    m=(0.8, 1.5),
+    # legend_title="Amplitude",
+    legend_position=:outertopright,
+    legendfontsize=5,
+    legendtitlefontsize=5,
+    ylabel="Switching Time",
+    xlabel="Switching Frequency",
+    dpi=500,
+    legend_title="Amplitude = 100, \n PRC2 rate"
+)
 # savefig(plt_id49_amp_100_prc2_set, "plt_id49_amp_100_prc2_set.png")
 
 

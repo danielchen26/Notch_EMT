@@ -193,7 +193,7 @@ plot!(plt, tt, osci_signal.(tt, amplitude, freq, 0.0),
 
 
 ## ====== Single plot for 1 gene comparing pulsatile case vs bump case=======
-T_init = 10.01
+T_init = 1e-10
 # ======= pulsatile model
 model = model_pulsatile
 signal_type = "pulsatile"
@@ -216,7 +216,7 @@ end
 
 #! Have to set T_init to 0.01 to avoid the discontinuity
 for ΔT ∈ 0.01:10:1000
-    plt = single_solve_plot_pulsatile_bump(ΔT = ΔT, T_init = 0.01)
+    plt = single_solve_plot_pulsatile_bump(ΔT=ΔT, T_init=0.01)
     display(plt)
 end
 
@@ -225,7 +225,7 @@ end
 
 
 ## ====== single plot for 1 gene ID 592 ======= Dll4 vs Dll1 within the first the duartiona of pulse given T_init
-T_init = 100.01
+T_init = 1e-10
 # ======= sustained model
 plt_sustained = single_solve_plot(; model=model_pulsatile, db_idx=592, phase=0, freq=0.0, amplitude=165.0, T_init=T_init, ΔT=50, type="sustained", phase_reset=true)
 # ======= pulsatile model
@@ -237,7 +237,7 @@ plot(plt_sustained, plt_pulsatile, layout=(2, 1))
 
 # * write function for ploting 1 gene ID default to 592 comparing sustained signal vs pulsatile signal.
 function single_solve_plot_sustained_pulsatile(; db_idx=592, phase=0, freq=0.0, amplitude=165.0, T_init=0.01, ΔT=100)
-    plt_sustained = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase = 0.0, freq = 0.0, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="sustained", phase_reset=true)
+    plt_sustained = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=0.0, freq=0.0, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="sustained", phase_reset=true)
     plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="pulsatile", phase_reset=true)
     plot(plt_sustained, plt_pulsatile, layout=(2, 1))
 end
@@ -245,7 +245,7 @@ end
 
 # * showed some freq and amplitude allows pulsatile signal switch states after signal is off (between pulses)
 for freq ∈ 0.01:0.05:1#, amplitude ∈ 165:10:300
-    plt = single_solve_plot_sustained_pulsatile(ΔT = 100, T_init = 0.01, freq = freq)#, amplitude = amplitude)
+    plt = single_solve_plot_sustained_pulsatile(ΔT=100, T_init=0.01, freq=freq)#, amplitude = amplitude)
     display(plt)
     sleep(0.1)
 end
@@ -253,15 +253,27 @@ end
 
 
 
-## ======= Two plots Dll4 vs Dll1 for gene id:49 ====
+
+## ======================== to find index with A = 64, Dll4 switch 
+for id = 100:200
+    find_id_Dll4_vs_Dll1(id, amplitude=300, prc2=0.64)
+    sleep(0.1)
+end
+## ======================== to find index with A = 64, Dll4 switch
+
+
+
+
+
+## * Exmaple 1 ======= Dll4 vs Dll1 for gene id:49 ====
 single_gene_id = 49
 id2_freq = 0.15
-phase2 = 5
+# phase2 = 5
 amplitude1 = 62
-amplitude2 = 31
-T_init = 0.01
+amplitude2 = 62
+T_init = 1e-10
 ΔT = 100
-prc2 = 0.41
+prc2 = 0.64
 plotly()
 plt_gene1_Dll4, plt_gene1_Dll1, plt_2genes_compare_id_49 =
     Two_Genes_TS_by_Prc2(;
@@ -279,55 +291,19 @@ plt_gene1_Dll4
 plt_gene1_Dll1
 plt_2genes_compare_id_49
 # savefig(plt_2genes_compare_id_49,"./figures/APS_id_49_Dll4_Dll1_compare_bump.png")
-
 ##
-savepath = pathgen("pulsatile")
-# savefig(plt_gene1_Dll4,savepath * "plt_gene1_Dll4_title.png")
-# savefig(plt_gene1_Dll1,savepath * "plt_gene1_Dll1_title.png")
-savefig(plt_gene1_Dll4, savepath * "plt2_gene1_Dll4.png")
-savefig(plt_gene1_Dll1, savepath * "plt2_gene1_Dll1.png")
-
-
-## ======================== to find index with A = 64, Dll4 switch 
-function find_id(id; type="pulsatile")
-    @show id
-    single_gene_id = id
-    id2_freq = 0.25
-    phase2 = 0
-    amplitude1 = 65
-    if type == "pulsatile"
-        amplitude2 = amplitude1 / 2
-    elseif type == "bump"
-        amplitude2 = amplitude1
-    end
-    T_init = 100
-    ΔT = 100
-    prc2 = 0.41
-
-    plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id =
-        Two_Genes_TS_by_Prc2(; model=model_pulsatile,
-            id1=single_gene_id, id2=single_gene_id,
-            id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
-            amplitude2=amplitude2, prc2=prc2,
-            T_init=T_init, ΔT=ΔT, title_on=false, legend_title_on=false,
-            type=type)
-    title!(plt_2genes_compare_id, "id:$id")
-    display(plt_2genes_compare_id)
-end
-for id = 100:200
-    find_id(id)
-    sleep(0.1)
-end
+# savepath = pathgen("pulsatile")
+# savefig(plt_gene1_Dll4, savepath * "plt2_gene1_Dll4.png")
+# savefig(plt_gene1_Dll1, savepath * "plt2_gene1_Dll1.png")
 
 
 
-## ======= Two plots Dll4 vs Dll1 for gene id:592 ====
+
+## * Example 2 ======= Dll4 vs Dll1 for gene id:592 ====
 single_gene_id = 592
 id2_freq = 0.09
-phase2 = 0
-amplitude1 = 165
-# amplitude2 = 65
-T_init = 100
+amplitude1 = amplitude2 = 134
+T_init = 1e-10
 ΔT = 100
 prc2 = 0.41
 
@@ -343,39 +319,37 @@ plt_gene2_Dll4
 plt_gene2_Dll1
 plt_2genes_compare_id_592
 ##
-savepath = pathgen("bump")
-# savefig(plt_gene2_Dll4, savepath * "plt_gene2_Dll4_title.png")
-# savefig(plt_gene2_Dll1, savepath * "plt_gene2_Dll1_title.png")
-
-savefig(plt_gene2_Dll4, savepath * "plt_gene2_Dll4.png")
-savefig(plt_gene2_Dll1, savepath * "plt_gene2_Dll1.png")
+# savepath = pathgen("bump")
+# savefig(plt_gene2_Dll4, savepath * "plt_gene2_Dll4.png")
+# savefig(plt_gene2_Dll1, savepath * "plt_gene2_Dll1.png")
 
 
 
 
-## ======= Two plots 🔴 animation Dll4 vs Dll1 for 1 gene ====
-single_gene_id = 49
-id2_freq = 0.1
-phase2 = 0
-amplitude1 = 60
-amplitude2 = 100
-prc2 = 0.41
-model = model_pulsatile
-Two_genes_prc2_TS_animation(; prc2_range=0:0.02:1, model=model,
-    db_idx1=single_gene_id,
-    db_idx2=single_gene_id, id2_freq=0.1, phase2=phase2,
-    amplitude1=amplitude1, amplitude2=amplitude1)
 
-## visualization for the two genes TS by changing prc2 rate
-_, _, plt_2genes_compare = Two_Genes_TS_by_Prc2(; id1=592, id2=49, id2_freq=0.2, prc2=0.41)
+
+## *======= Animation for gene ID:49 Dll4 vs Dll1, when varying PRC2 rates ===========  
+gene_id = 49
+id2_freq = 0.13
+amplitude = 100
+anim_comp = Two_genes_prc2_TS_animation(; prc2_range=0:0.02:1, model=model_pulsatile,
+    id1=gene_id,
+    id2=gene_id,
+    id2_freq=id2_freq,
+    amplitude1=amplitude,
+    amplitude2=amplitude)
+gif(anim_comp, fps=1)
+##
+
+## * gene ID: 49 as an example, visualization for the two genes TS by changing prc2 rate 
+
+_, _, plt_2genes_compare = Two_Genes_TS_by_Prc2(; id1=49, id2=49, id2_freq=0.13, prc2=0.8, amplitude1=100, amplitude2=100)
 plt_2genes_compare
-# savefig(plt_2genes_compare, "./figures/592_49_prc2=0.862.png")
 
 
 ##
-Two_genes_prc2_TS_animation(; prc2_range=0:0.02:1, db_idx1=593, db_idx2=49)
 
-
+# savefig(plt_2genes_compare, "./figures/592_49_prc2=0.862.png")
 
 
 ## ------- loop over each parameter set to find large TS that is close to the ΔT[end]

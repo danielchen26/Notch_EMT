@@ -1,21 +1,21 @@
 ## ====================== Defining the model and parameters ==========================
 module model_parameters
-    Base.@kwdef mutable struct Signal
-        db_idx::Int64
-        tspan::Tuple{Float64, Float64}
-        freq::Float64
-        phase::Float64
-        amplitude::Float64
-        T_init::Float64
-        ΔT::Float64
-    end
+Base.@kwdef mutable struct Signal
+    db_idx::Int64
+    tspan::Tuple{Float64,Float64}
+    freq::Float64
+    phase::Float64
+    amplitude::Float64
+    T_init::Float64
+    ΔT::Float64
+end
 end
 
 
 
 
 ## ================ import database =================
-function loading_database(;data_path = "../../../Notch_EMT_data/Notch_params_complete.csv")
+function loading_database(; data_path="../../../Notch_EMT_data/Notch_params_complete.csv")
     db = CSV.File(data_path) |> DataFrame
     p_names = names(db)[1:11]
     initi_names = names(db)[13:end]
@@ -37,7 +37,7 @@ end
 
 
 ##  ============ Import models ==========
-function Import_model(;type = "pulsatile")
+function Import_model(; type="pulsatile")
     if type == "pulsatile"
         model_pulsatile = @reaction_network begin
             (A * (1 + sign(cos(w * t + ϕ))), 1.0), R ↔ NR               # NICD binds RBPJ
@@ -93,8 +93,8 @@ end
 
 ## =====================  loading function library =====================
 # add document for the following function
-    # ts_in is the callback function working time duration, ts_in[1] is the start time, ts_in[2] is the end time
-    # at the start time, the value for 13th paraemter is A, at the end time, the value for 13th parameter is turned off to 0.
+# ts_in is the callback function working time duration, ts_in[1] is the start time, ts_in[2] is the end time
+# at the start time, the value for 13th paraemter is A, at the end time, the value for 13th parameter is turned off to 0.
 function make_cb(ts_in, index, value)
     ts = ts_in
     condition(u, t, integrator) = t in ts
@@ -105,7 +105,7 @@ function make_cb(ts_in, index, value)
             integrator.p[index] = 0.0
         end
     end
-    cb = DiscreteCallback(condition, affect!, save_positions = (true, true))
+    cb = DiscreteCallback(condition, affect!, save_positions=(true, true))
     return ts, cb
 end
 
@@ -133,7 +133,7 @@ test if the steady state switched
 	-1 : switched
 	 1 : not swithced
 """
-function check_switching(sol,ts,tspan)
+function check_switching(sol, ts, tspan)
     H4_i, H27_i = sol(ts[1])[[6, 9]]
     H4_f, H27_f = sol(tspan[2])[[6, 9]]
     init = H4_i / H27_i < 1 ? 1 : -1
@@ -142,7 +142,7 @@ function check_switching(sol,ts,tspan)
 end
 
 function add_Boundary_event(switch_amplitude, switch_frequency, plt)
-    df = DataFrame(switch_amplitude = switch_amplitude, switch_frequency = switch_frequency)
+    df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
     # CSV.write("switching_freq_amplitude.csv",df)
 
     gp = groupby(df, :switch_frequency)
@@ -153,12 +153,12 @@ function add_Boundary_event(switch_amplitude, switch_frequency, plt)
 
     critical_freq = [keys(gp)[i].switch_frequency for i = 1:gp.ngroups]
     boundary_amplitude
-    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label = "switching boundary", lw = 3)
+    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label="switching boundary", lw=3)
 end
 
 # save A-w data
 function save_A_w_data(switch_amplitude, switch_frequency, path)
-    df = DataFrame(switch_amplitude = switch_amplitude, switch_frequency = switch_frequency)
+    df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
     CSV.write(path * "switch_amplitude.csv", df)
 end
 
@@ -188,57 +188,57 @@ function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT
 end
 
 
-function single_solve_plot(;model = model, db_idx, phase, freq, amplitude, T_init, ΔT, type = "pulsatile", title = "on", phase_reset = true)
-    tspan = (0.0,  T_init + 3*ΔT)
-    u0map, pmap, p, tspan, ts, cb, sol, phase = single_solve(;model = model, db_idx = db_idx, freq = freq, phase = phase, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan, phase_reset = phase_reset)
+function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init, ΔT, type="pulsatile", title="on", phase_reset=true)
+    tspan = (0.0, T_init + 3 * ΔT)
+    u0map, pmap, p, tspan, ts, cb, sol, phase = single_solve(; model=model, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, phase_reset=phase_reset)
     # @show pmap
     check = check_switching(sol, ts, tspan)
-    println( check == -1 ? "Histone states swithced" : "NO swithing")
-    t_switching  = switching_time(;sol = sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
-    t_switching = round(t_switching - T_init, digits = 2)
+    println(check == -1 ? "Histone states swithced" : "NO swithing")
+    t_switching = switching_time(; sol=sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+    t_switching = round(t_switching - T_init, digits=2)
     @show t_switching
     if title == "on"
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
             # vars = [1,2,3,4,5,6,7,8,9,10,11], # all variables
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing, 
-            dpi = 500)
-        check == -1 ? 
-            title!(plt, " A=$amplitude, freq=$freq, ST=$t_switching",
-            titlefont=font(10,"Arial")) : 
-            title!(plt, " A=$amplitude, freq=$freq, ST= No Swithing", 
-            titlefont=font(10,"Arial"))
+            lw=2,
+            xlabel="Time", ylabel="Concentration",
+            foreground_color_legend=nothing,
+            dpi=500)
+        check == -1 ?
+        title!(plt, " A=$amplitude, freq=$freq, ST=$t_switching",
+            titlefont=font(10, "Arial")) :
+        title!(plt, " A=$amplitude, freq=$freq, ST= No Swithing",
+            titlefont=font(10, "Arial"))
     elseif title == "off"
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            dpi = 500)
-        end
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            lw=2,
+            xlabel="Time", ylabel="Concentration",
+            foreground_color_legend=nothing,
+            dpi=500)
+    end
     tt = ts[1]:0.01:ts[2]
     if freq == 0
-        plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, 2*amplitude, 0], # FIXME: need to change to 2*amplitude
-        label = "Sustained Input", seriestype = :steppre, line = (:dashdot, 2), alpha = 0.8,
-        # ylims = [0, 400],
-        fill = (0, 0.3, :blue), color = "black", dpi = 300)
+        plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, 2 * amplitude, 0], # FIXME: need to change to 2*amplitude
+            label="Sustained Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
+            # ylims = [0, 400],
+            fill=(0, 0.3, :blue), color="black", dpi=300)
         return plt
     elseif freq != 0
         if type == "pulsatile"
             pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
             plot!(plt, tt, pulse_signal.(tt, amplitude, freq, phase),
-                label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+                label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             return plt
-        elseif  type =="bump"
+        elseif type == "bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
             plot!(plt, tt, bump_signal.(tt, amplitude, freq, phase),
-                label = "Bump Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+                label="Bump Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill = (0, 0.3, :darkgreen), color = "black", dpi = 300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             return plt
         end
     end
@@ -246,7 +246,7 @@ end
 
 
 
-function remake_prob(model, u0map, tspan, p ; prc2 = 0.4, mute_parameter_disp = false)
+function remake_prob(model, u0map, tspan, p; prc2=0.4, mute_parameter_disp=false)
     if mute_parameter_disp == false
         @show p
         p[5] = prc2
@@ -273,11 +273,11 @@ Input:
 sol = remake_solve_prob_by_ID(model, db_idx, freq, phase, amplitude, T_init, ΔT, tspan ; prc2 = 0.4)
 ```
 """
-function remake_solve_prob_by_ID(;model, db_idx, freq = 0.0, phase = 0.0, amplitude, T_init = 100, ΔT = 100, tspan_rt = 4, prc2 = 0.4)
-    tspan = (0.0,  tspan_rt*ΔT)
+function remake_solve_prob_by_ID(; model, db_idx, freq=0.0, phase=0.0, amplitude, T_init=100, ΔT=100, tspan_rt=4, prc2=0.4)
+    tspan = (0.0, tspan_rt * ΔT)
     @show freq
     @show phase
-    @show T_init, ΔT , tspan
+    @show T_init, ΔT, tspan
     println("\n")
     # ======== change parameter set with a particular prc2 rate
     p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
@@ -290,15 +290,15 @@ function remake_solve_prob_by_ID(;model, db_idx, freq = 0.0, phase = 0.0, amplit
     ts, cb = make_cb([T_init, T_init + ΔT], 13, amplitude)
     #  ======= construct prob and solve
     prob = ODEProblem(model, u0map, tspan, pmap)
-    sol = solve(prob, Rosenbrock23(), callback = cb, tstops = ts)
+    sol = solve(prob, Rosenbrock23(), callback=cb, tstops=ts)
     return sol, ts, tspan
 end
 
 
 
 # ------ Find the switching time
-function switching_time(;sol = sol, pulse_period = 1.0:0.1:300, idx = [6,9], return_plot = true)
-    ∇_1(t, idx)= sol(t, Val{1}, idxs= idx)
+function switching_time(; sol=sol, pulse_period=1.0:0.1:300, idx=[6, 9], return_plot=true)
+    ∇_1(t, idx) = sol(t, Val{1}, idxs=idx)
     # plot(∇_1(pulse_period, idx))
     max_value, max_pos = findmax(∇_1(pulse_period, idx))
     t_max_id = max_pos[2]
@@ -311,6 +311,19 @@ function switching_time(;sol = sol, pulse_period = 1.0:0.1:300, idx = [6,9], ret
     # end
     return t_switching
 end
+#! this function might find switching time better 
+function find_ST(sol::ODESolution)
+    t = sol.t
+    y1 = sol[6, :] #H4
+    y2 = sol[9, :] #27
+    for i in 1:length(t)-1
+        if (y1[i] - y2[i]) * (y1[i+1] - y2[i+1]) < 0
+            # trajectories cross between i and i+1
+            return (t[i] + t[i+1]) / 2
+        end
+    end
+    return nothing  # trajectories never cross
+end
 
 
 #! fixed the phase2 for the pulsalatile signle for gene 2
@@ -319,18 +332,17 @@ end
 
 TBW
 """
-function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phase2=0.0, amplitude1=130, amplitude2=130, prc2=0.1, T_init=100, ΔT=100, tspan_rt=4, title_on=true, legend_title_on=true, vars_to_show=[4, 5, 6, 9], type="pulsatile", phase2_reset=true)
-    if type == "pulsatile"
-        amplitude2 = amplitude1/2
-    elseif type == "bump"
-        amplitude2 = amplitude1
-    end
+function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phase2=0.0, amplitude1=130, amplitude2=130, prc2=0.1, T_init=1e-10, ΔT=100, tspan_rt=2, title_on=true, legend_title_on=true, vars_to_show=[4, 5, 6, 9], type="pulsatile", phase2_reset=true)
+    # ======== signal form =================
+    osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
     # ======== Gene 1 with Dll4 sustainable signal
     sol_gene1, ts1, tspan1 = remake_solve_prob_by_ID(; model=model, db_idx=id1, amplitude=amplitude1, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2=prc2) #! default freq = 0.0, phase = 0.0 which associates with Dll4
     check1 = check_switching(sol_gene1, ts1, tspan1)
     t_switching1 = switching_time(; sol=sol_gene1, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
-    t_switching1 = round(t_switching1 - T_init, digits=2)
-    @show t_switching1
+    t_switching1 = round(t_switching1 - T_init, digits=3)
+    t_switching1_improved = isnothing(find_ST(sol_gene1)) ? "No Switching" : round(find_ST(sol_gene1), digits=2)
+    @show t_switching1, t_switching1_improved
+
 
     if title_on == true && legend_title_on == true
         plt_gene1_Dll4 = plot(sol_gene1,
@@ -341,9 +353,9 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             legend_title="Gene 1", legendtitlefontsize=10,
             dpi=500)
         check1 == -1 ?
-        title!(plt_gene1_Dll4, "A=$amplitude1, freq=0, PRC2 rate=$prc2,  ST=$t_switching1",
-            titlefont=font(10, "Arial"),) :
-        title!(plt_gene1_Dll4, "A=$amplitude1, freq=0, PRC2 rate=$prc2,  ST=No Switching",
+        title!(plt_gene1_Dll4, "A=$(osci_signal(0,amplitude1,0,0)), freq=0, PRC2 rate=$prc2,  ST=$t_switching1_improved",
+            titlefont=font(10, "Arial")) :
+        title!(plt_gene1_Dll4, "A=$(osci_signal(0,amplitude1,0,0)), freq=0, PRC2 rate=$prc2,  ST=No Switching",
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == true
         plt_gene1_Dll4 = plot(sol_gene1,
@@ -364,9 +376,9 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             # legend_title = "Gene 1", legendtitlefontsize = 10,
             dpi=500)
         check1 == -1 ?
-        title!(plt_gene1_Dll4, "A=$amplitude1, freq=0, PRC2 rate=$prc2,  ST=$t_switching1",
+        title!(plt_gene1_Dll4, "A=$(osci_signal(0,amplitude1,0,0)), freq=0, PRC2 rate=$prc2,  ST=$t_switching1_improved",
             titlefont=font(10, "Arial"),) :
-        title!(plt_gene1_Dll4, "A=$amplitude1, freq=0, PRC2 rate=$prc2,  ST=No Switching",
+        title!(plt_gene1_Dll4, "A=$(osci_signal(0,amplitude1,0,0)), freq=0, PRC2 rate=$prc2,  ST=No Switching",
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == false
         plt_gene1_Dll4 = plot(sol_gene1,
@@ -379,22 +391,23 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             titlefont=font(10, "Arial"),
             dpi=500)
     end
-    plot!(plt_gene1_Dll4, [0, ts1[1], ts1[2], tspan_rt * ΔT[end]], [0, 0, amplitude1, 0],
-        label="Sustained Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
+    plot!(plt_gene1_Dll4, [0, ts1[1], ts1[2], tspan_rt * ΔT[end]], [0, 0, osci_signal(0, amplitude1, 0, 0), 0],
+        label="Sustained Signal", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
         # ylims = [0, 400],
         fill=(0, 0.3, :blue), color="black", dpi=500)
 
     # * =======================  Gene 2 with Dll1 pulsatile signal =============================
-    osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
+    # osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
     if phase2_reset == true && id2_freq != 0 #! phase should not be reseted for Dll4 sustained signal
         phase2 = 3pi / 2 - id2_freq * T_init #! fixed the phase2 for the pulsatile signle for gene 2
     end
     sol_gene2, ts2, tspan2 = remake_solve_prob_by_ID(; model=model, db_idx=id2, freq=id2_freq, phase=phase2, amplitude=amplitude2, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2=prc2)
-    amplitude2_peak = 2 * amplitude2 #! peak amplitude for Dll1
     check2 = check_switching(sol_gene2, ts2, tspan2)
     t_switching2 = switching_time(; sol=sol_gene2, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
-    t_switching2 = round(t_switching2 - T_init, digits=2)
-    @show t_switching2
+    t_switching2 = round(t_switching2 - T_init, digits=3)
+    t_switching2_improved = isnothing(find_ST(sol_gene2)) ? "No Switching" : round(find_ST(sol_gene2), digits=2)
+    @show t_switching2, t_switching2_improved
+
     tt = ts2[1]:0.01:ts2[2]
     if title_on == true && legend_title_on == true
         plt_gene2_Dll1 = plot(sol_gene2,
@@ -405,9 +418,9 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             legend_title="Gene 2", legendtitlefontsize=10,
             dpi=500)
         check2 == -1 ?
-        title!(plt_gene2_Dll1, "A=$amplitude2_peak, freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2",
+        title!(plt_gene2_Dll1, "A=$(osci_signal(0,amplitude2,id2_freq,3pi/2 + 1e-10)), freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2_improved",
             titlefont=font(10, "Arial"),) :
-        title!(plt_gene2_Dll1, "A=$amplitude2_peak, freq=$id2_freq, PRC2 rate=$prc2,  ST=No Switching",
+        title!(plt_gene2_Dll1, "A=$(osci_signal(0,amplitude2,id2_freq,3pi/2 + 1e-10)), freq=$id2_freq, PRC2 rate=$prc2,  ST=No Switching",
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == true
         plt_gene2_Dll1 = plot(sol_gene2,
@@ -428,9 +441,9 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             # legend_title = "Gene 2", legendtitlefontsize = 10,
             dpi=500)
         check2 == -1 ?
-        title!(plt_gene2_Dll1, "A=$amplitude2_peak, freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2",
+        title!(plt_gene2_Dll1, "A=$(osci_signal(0,amplitude2,id2_freq,3pi/2 + 1e-10 )), freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2_improved",
             titlefont=font(10, "Arial"),) :
-        title!(plt_gene2_Dll1, "A=$amplitude2_peak, freq=$id2_freq, PRC2 rate=$prc2,  ST=No Switching",
+        title!(plt_gene2_Dll1, "A=$(osci_signal(0,amplitude2,id2_freq,3pi/2 + 1e-10 )), freq=$id2_freq, PRC2 rate=$prc2,  ST=No Switching",
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == false
         plt_gene2_Dll1 = plot(sol_gene2,
@@ -453,18 +466,18 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
         if type == "pulsatile"
             pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
             plot!(plt_gene2_Dll1, tt, pulse_signal.(tt, amplitude2, id2_freq, phase2),
-                label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
+                label="Pulsatile Signal", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
                 fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             # return plt_gene2_Dll1
         elseif type == "bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
             plot!(plt_gene2_Dll1, tt, bump_signal.(tt, amplitude2, id2_freq, phase2),
-                label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
+                label="Pulsatile Signal", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
                 fill=(0, 0.3, :darkgreen), color="black", dpi=300)
             check2 == -1 ?
-            title!(plt_gene2_Dll1, "A=$amplitude2, freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2",
+            title!(plt_gene2_Dll1, "A=$amplitude2, freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2_improved",
                 titlefont=font(10, "Arial"),) :
             title!(plt_gene2_Dll1, "A=$amplitude2, freq=$id2_freq, PRC2 rate=$prc2,  ST=No Switching",
                 titlefont=font(10, "Arial"))
@@ -479,82 +492,129 @@ end
 
 
 
+function find_id_Dll4_vs_Dll1(id; amplitude=65, freq=0.15, ΔT=100, prc2=0.41, type="pulsatile")
+    @show id
+    single_gene_id = id
+    id2_freq = freq
+    phase2 = 0
+    amplitude1 = amplitude2 = amplitude
+    T_init = 1e-10
+    ΔT = ΔT
+    prc2 = prc2
 
-function Two_genes_prc2_TS_animation(;prc2_range = 0:0.02:1, model = model, db_idx1, db_idx2, id2_freq = 0.2, phase2 = 0.0, amplitude1 = 130, amplitude2 = 130, T_init = 100, ΔT = 100, tspan_rt = 4, type = "pulsatile")
+    plt_gene2_Dll4, plt_gene2_Dll1, plt_2genes_compare_id =
+        Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+            id1=single_gene_id, id2=single_gene_id,
+            id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
+            amplitude2=amplitude2, prc2=prc2,
+            T_init=T_init, ΔT=ΔT, title_on=false, legend_title_on=false,
+            type=type)
+    title!(plt_2genes_compare_id, "id:$id")
+    display(plt_2genes_compare_id)
+end
+
+
+
+# generate an animation for Two_Genes_TS_by_Prc2() for various prc2 values
+
+function Two_genes_prc2_TS_animation(; prc2_range=0:0.02:1, model=model, id1, id2, id2_freq=0.2, phase2=0.0, amplitude1=130, amplitude2=130, T_init=1e-10, ΔT=100, tspan_rt=2, type="pulsatile", phase2_reset=true)
+    osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
     anim = @animate for prc2 ∈ prc2_range
         # ======== Gene 1 with Dll4 sustainable signal
-        @time sol_gene1, ts1 = remake_solve_prob_by_ID(; model = model, db_idx = db_idx1, amplitude = amplitude1, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
-        @show t_switching1 = switching_time(; sol = sol_gene1, pulse_period = T_init:0.1:T_init+ΔT, idx = [6, 9], return_plot = false)
-        # plt_gene1 = plot(sol_gene1,
-        #     vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-        #     lw = 1.5,
-        #     xlabel = "Time", ylabel = "Concentration",
-        #     title = "PRC2 rate : $prc2",
-        #     dpi = 500)
-    
-        plt_gene1_Dll4 = plot(sol_gene1,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            legend_title = "Gene 1", legendtitlefontsize = 10,
-            title = "A=$amplitude1, freq=0, PRC2 rate=$prc2,  ST=$t_switching1",
-            titlefont = font(10, "Arial"),
-            dpi = 500)
-        plot!(plt_gene1_Dll4, [0, ts1[1], ts1[2], tspan_rt * ΔT], [0, 0, amplitude1, 0],
-            label = "Sustainable Input", seriestype = :steppre, line = (:dashdot, 2), alpha = 0.8,
-            # ylims = [0, 400],
-            fill = (0, 0.3, :blue), color = "black", dpi = 500)
-    
-        # ======= Gene 2 with Dll1 pulsatile signal
-        osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
-        sol_gene2, ts2 = remake_solve_prob_by_ID(; model = model, db_idx = db_idx2, freq = id2_freq, phase = phase2, amplitude = amplitude2, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
-        @show t_switching2 = switching_time(; sol = sol_gene2, pulse_period = T_init:0.1:T_init+ΔT, idx = [6, 9], return_plot = false)
-        tt = ts2[1]:0.01:ts2[2]
-        plt_gene2_Dll1 = plot(sol_gene2,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            legend_title = "Gene 2", legendtitlefontsize = 10,
-            title = "A=$amplitude2, freq=$id2_freq, PRC2 rate=$prc2, ST=$t_switching2",
-            titlefont = font(10, "Arial"),
-            dpi = 500)
-
-        if id2_freq != 0
-            if type == "pulsatile"
-                pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
-                plot!(plt_gene2_Dll1, tt, pulse_signal.(tt, amplitude2, id2_freq, phase2),
-                    label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
-                    # ylims = [0, 700],
-                    fill = (0, 0.3, :darkgreen), color = "black", dpi = 500)
-                # return plt_gene2_Dll1
-            elseif type == "bump"
-                bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
-                plot!(plt_gene2_Dll1, tt, bump_signal.(tt, amplitude2, id2_freq, phase2),
-                    label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
-                    # ylims = [0, 700],
-                    fill = (0, 0.3, :darkgreen), color = "black", dpi = 500)
-                # return plt_gene2_Dll1
-            end
-        end
-
-        # plot!(plt_gene2_Dll1, tt, osci_signal.(tt, amplitude2, id2_freq, 0.0),
-        #     label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
-        #     # ylims = [0, 700],
-        #     fill = (0, 0.3, :darkgreen), color = "black", dpi = 500)
-    
-        # @time sol_gene2  = remake_solve_prob_by_ID(;model = model, db_idx = db_idx2, freq = 0.2,  amplitude = 130, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
-        # plt_gene2 = plot(sol_gene2,
-        #     vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-        #     lw = 1.5,
-        #     xlabel = "Time", ylabel = "Concentration",
-        #     title = "PRC2 rate : $prc2",
-        #     dpi = 500)
-        plt_combine = plot(plt_gene1_Dll4, plt_gene2_Dll1, layout = (2, 1))
+        _, _, plt_combine = Two_Genes_TS_by_Prc2(; model=model, id1=single_gene_id, id2=single_gene_id,
+            id2_freq=id2_freq, phase2=phase2, amplitude1=amplitude1,
+            amplitude2=amplitude2, prc2=prc2,
+            T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=false,
+            vars_to_show=[5, 6, 9], #tspan_rt = 2, # 
+            type="pulsatile",
+            phase2_reset=true)
     end
-    return gif(anim, fps = 1)
+    return anim
 end
+
+
+
+
+
+# function Two_genes_prc2_TS_animation(; prc2_range=0:0.02:1, model=model, db_idx1, db_idx2, id2_freq=0.2, phase2=0.0, amplitude1=130, amplitude2=130, T_init=1e-10, ΔT=100, tspan_rt=2, type="pulsatile", phase2_reset=true)
+#     osci_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
+#     anim = @animate for prc2 ∈ prc2_range
+#         # ======== Gene 1 with Dll4 sustainable signal
+#         @time sol_gene1, ts1, tspan1 = remake_solve_prob_by_ID(; model=model, db_idx=db_idx1, amplitude=amplitude1, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2=prc2)
+#         check1 = check_switching(sol_gene1, ts1, tspan1)
+#         t_switching1 = switching_time(; sol=sol_gene1, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+#         t_switching1 = round(t_switching1 - T_init, digits=2)
+#         @show t_switching1
+
+#         plt_gene1_Dll4 = plot(sol_gene1,
+#             vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+#             lw=2,
+#             xlabel="Time", ylabel="Concentration",
+#             foreground_color_legend=nothing,
+#             legend_title="Gene 1", legendtitlefontsize=10,
+#             title="A=$(osci_signal(0,amplitude1,0,0)), freq=0, PRC2 rate=$prc2,  ST=$t_switching1",
+#             titlefont=font(10, "Arial"),
+#             dpi=500)
+#         plot!(plt_gene1_Dll4, [0, ts1[1], ts1[2], tspan_rt * ΔT], [0, 0, osci_signal(0, amplitude1, 0, 0), 0],
+#             label="Sustained Signal", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
+#             # ylims = [0, 400],
+#             fill=(0, 0.3, :blue), color="black", dpi=500)
+
+#         # ======= Gene 2 with Dll1 pulsatile signal
+#         if phase2_reset == true && id2_freq != 0 #! phase should not be reseted for Dll4 sustained signal
+#             phase2 = 3pi / 2 - id2_freq * T_init #! fixed the phase2 for the pulsatile signle for gene 2
+#         end
+#         sol_gene2, ts2, tspan2 = remake_solve_prob_by_ID(; model=model, db_idx=db_idx2, freq=id2_freq, phase=phase2, amplitude=amplitude2, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2=prc2)
+#         check2 = check_switching(sol_gene2, ts2, tspan2)
+#         t_switching2 = switching_time(; sol=sol_gene2, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+#         t_switching2 = round(t_switching2 - T_init, digits=2)
+#         @show t_switching2
+
+#         tt = ts2[1]:0.01:ts2[2]
+#         plt_gene2_Dll1 = plot(sol_gene2,
+#             vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+#             lw=2,
+#             xlabel="Time", ylabel="Concentration",
+#             foreground_color_legend=nothing,
+#             legend_title="Gene 2", legendtitlefontsize=10,
+#             title="A=$(osci_signal(0,amplitude2,id2_freq,3pi/2 + 1e-10)), freq=$id2_freq, PRC2 rate=$prc2, ST=$t_switching2",
+#             titlefont=font(10, "Arial"),
+#             dpi=500)
+
+#         if id2_freq != 0
+#             if type == "pulsatile"
+#                 pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
+#                 plot!(plt_gene2_Dll1, tt, pulse_signal.(tt, amplitude2, id2_freq, phase2),
+#                     label="Pulsatile Signal", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
+#                     # ylims = [0, 700],
+#                     fill=(0, 0.3, :darkgreen), color="black", dpi=500)
+#                 # return plt_gene2_Dll1
+#             elseif type == "bump"
+#                 bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
+#                 plot!(plt_gene2_Dll1, tt, bump_signal.(tt, amplitude2, id2_freq, phase2),
+#                     label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
+#                     # ylims = [0, 700],
+#                     fill=(0, 0.3, :darkgreen), color="black", dpi=500)
+#                 # return plt_gene2_Dll1
+#             end
+#         end
+
+#         # plot!(plt_gene2_Dll1, tt, osci_signal.(tt, amplitude2, id2_freq, 0.0),
+#         #     label = "Pulsatile Input", seriestype = :steppre, line = (:dot, 2), alpha = 0.8,
+#         #     # ylims = [0, 700],
+#         #     fill = (0, 0.3, :darkgreen), color = "black", dpi = 500)
+
+#         # @time sol_gene2  = remake_solve_prob_by_ID(;model = model, db_idx = db_idx2, freq = 0.2,  amplitude = 130, T_init = T_init, ΔT = ΔT, tspan_rt = tspan_rt, prc2 = prc2)
+#         # plt_gene2 = plot(sol_gene2,
+#         #     vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+#         #     lw = 1.5,
+#         #     xlabel = "Time", ylabel = "Concentration",
+#         #     title = "PRC2 rate : $prc2",
+#         #     dpi = 500)
+#         plt_combine = plot(plt_gene1_Dll4, plt_gene2_Dll1, layout=(2, 1))
+#     end
+#     return gif(anim, fps=1)
+# end
 
 
 
@@ -582,7 +642,7 @@ Note: T_init, ΔT, tspan will take from the Environment, and they are printed ou
 A_ω_ϕ_st_relation(;amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301)
 ```
 """
-function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301, T_init = 100, ΔT = 100, tspan_rt = 4, phase_sample_size = 6, prc2 = "NA",mute_parameter_disp = true)
+function A_ω_ϕ_st_relation(; model=model, amplitude_range=100:20:300, freq_range=0:0.01:0.4, db_idx=301, T_init=100, ΔT=100, tspan_rt=4, phase_sample_size=6, prc2="NA", mute_parameter_disp=true)
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
@@ -596,17 +656,17 @@ function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_
             # switch_set = []
             # for phase ∈ 0:2π
             # for phase ∈ range(0,2π,length= phase_sample_size)
-            for phase ∈ range(0,6,length= phase_sample_size)
+            for phase ∈ range(0, 6, length=phase_sample_size)
                 _, _, _, _, ts, _, single_sol = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
-                t_switching = switching_time(; sol = single_sol, pulse_period = T_init:0.1:T_init+ΔT, idx = [6, 9], return_plot = false)
-                check = check_switching(single_sol,ts,tspan)
-            
+                t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+                check = check_switching(single_sol, ts, tspan)
+
                 if check == -1
                     push!(switch_time, t_switching)
                     append!(switch_amplitude, amplitude)
                     append!(switch_frequency, freq_i)
                     append!(switch_phase, phase)
-            
+
                     # plt = plot(single_sol,
                     # # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
                     # vars = [ 6, 9], # [H4,H27]
@@ -616,16 +676,16 @@ function A_ω_ϕ_st_relation(;model = model, amplitude_range = 100:20:300, freq_
                     # # ylims = [0,500],
                     # title = "A : $amplitude, freq = $freq_i, switch time : $t_switching",
                     # dpi = 300)
-            
+
                 end
             end
         end
     end
-    A_ω_ϕ_st_database = DataFrame(freq = switch_frequency, phase = switch_phase, amp = switch_amplitude, stime = switch_time)
+    A_ω_ϕ_st_database = DataFrame(freq=switch_frequency, phase=switch_phase, amp=switch_amplitude, stime=switch_time)
     return A_ω_ϕ_st_database
 end
 
-function df4d_sub_gen(df4d; fix_phase = true, fix_amp = true, amplitude_select = rand(unique(df4d.amp)))
+function df4d_sub_gen(df4d; fix_phase=true, fix_amp=true, amplitude_select=rand(unique(df4d.amp)))
     if fix_phase == true
         df4d_phase_0 = filter(row -> row.phase in [0], df4d)
         df4d_phase_1 = filter(row -> row.phase in [1], df4d)
@@ -644,18 +704,18 @@ end
 ## plotting functions
 
 # make animation
-function anim_prc2_changing(range; model = model, u0 = u0, tspan = tspan, p = p, cb = cb, ts= ts)
+function anim_prc2_changing(range; model=model, u0=u0, tspan=tspan, p=p, cb=cb, ts=ts)
     anim = @animate for prc2 ∈ range
-        prob = remake_prob(model, u0, tspan, p; prc2 = prc2)
-        @time sol = solve(prob, Rosenbrock23(), callback = cb, tstops = ts)
+        prob = remake_prob(model, u0, tspan, p; prc2=prc2)
+        @time sol = solve(prob, Rosenbrock23(), callback=cb, tstops=ts)
         plt = plot(sol,
-            vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            lw = 1.5,
-            xlabel = "Time", ylabel = "Concentration",
-            title = "PRC2 rate : $prc2",
-            dpi = 500)
+            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            lw=1.5,
+            xlabel="Time", ylabel="Concentration",
+            title="PRC2 rate : $prc2",
+            dpi=500)
     end
-    return gif(anim, fps = 1)
+    return gif(anim, fps=1)
 end
 
 
@@ -665,13 +725,13 @@ end
     Vars = [4, 5, 6, 9] are variables [MR,KDM5A,H4,H27,KDM6A]
 """
 function Plot_C(sol)
-    plt = plot(sol = sol,
-        vars = [[4, 5, 6, 9]], # [MR,KDM5A,H4,H27,KDM6A]
-        lw = 1.5,
-        xlabel = "Time", ylabel = "Concentration",
+    plt = plot(sol=sol,
+        vars=[[4, 5, 6, 9]], # [MR,KDM5A,H4,H27,KDM6A]
+        lw=1.5,
+        xlabel="Time", ylabel="Concentration",
         # title = title,
-        dpi = 500)
-        return plt
+        dpi=500)
+    return plt
 end
 
 
@@ -685,32 +745,32 @@ end
     3. The db_idx of which specific dataset to calculate
     Note: the default phase ϕ = 0
 """
-function anim_freq_tswitch(;range = 0:0.01:0.4, amplitude = 500, db_idx = 301)
+function anim_freq_tswitch(; range=0:0.01:0.4, amplitude=500, db_idx=301)
     t_switching_set = []
     anim = @animate for freq_i ∈ range
-        _,_,_,_,ts,_,single_sol = single_solve(;db_idx = db_idx, freq = freq_i, phase = 0, amplitude = amplitude, T_init = T_init, ΔT = ΔT, tspan = tspan)
-        t_switching  = switching_time(;sol = single_sol, pulse_period = T_init:0.1:T_init + ΔT , idx = [6,9], return_plot = false)
-        check = check_switching(single_sol,ts,tspan)
+        _, _, _, _, ts, _, single_sol = single_solve(; db_idx=db_idx, freq=freq_i, phase=0, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan)
+        t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+        check = check_switching(single_sol, ts, tspan)
         if check == -1
             push!(t_switching_set, t_switching)
             plot(single_sol,
-            # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
-            vars = [ 6, 9], # [H4,H27]
-            lw = 2,
-            xlabel = "Time", ylabel = "Concentration",
-            foreground_color_legend = nothing,
-            # ylims = [0,500],
-            title = "A : $amplitude, freq = $freq_i, switch time : $t_switching",
-            dpi = 300)
+                # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
+                vars=[6, 9], # [H4,H27]
+                lw=2,
+                xlabel="Time", ylabel="Concentration",
+                foreground_color_legend=nothing,
+                # ylims = [0,500],
+                title="A : $amplitude, freq = $freq_i, switch time : $t_switching",
+                dpi=300)
         end
     end
-    gif(anim, "freq_animation.gif", fps = 1)
+    gif(anim, "freq_animation.gif", fps=1)
 end
 
 
 
 
-function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT = 100, amplitude_select = false, palette = :RdYlBu_6, save = false)
+function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, save=false)
     @show db_idx
     if isempty(amplitude_select) == false
         df4d_phase_0_amp_select = filter(row -> row.amp in amplitude_select, df4d_phase_0)
@@ -719,15 +779,15 @@ function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT = 100, amplitude_select = f
     plt = @df df4d_phase_0_amp_select plot(
         :freq,
         :stime,
-        group =  :amp,
-        palette = palette,
+        group=:amp,
+        palette=palette,
         # palette = Symbol("RdYlBu_"*"$color_catg"),
-        m = (2, 4),
-        legend_title = "Amplitude",
-        legend_position = :outertopright,
+        m=(2, 4),
+        legend_title="Amplitude",
+        legend_position=:outertopright,
         # xlabel = "Switching Amplitude",
         # ylabel = "Switching Frequency"
-        dpi = 500,
+        dpi=500,
         # title = "Amplitude = 100"
         # bg = RGB(0.2, 0.2, 0.5)
     )
@@ -744,7 +804,7 @@ end
 
 
 
-function df4d_fix_amp_freq_vs_ST(df4d_amp_select; ΔT = 100, phase_select = false, palette = :RdYlBu_6, save = false)
+function df4d_fix_amp_freq_vs_ST(df4d_amp_select; ΔT=100, phase_select=false, palette=:RdYlBu_6, save=false)
     @show db_idx
     if isempty(phase_select) == false
         df4d_amp_select_phase_select = filter(row -> row.phase in phase_select, df4d_amp_select)
@@ -753,15 +813,15 @@ function df4d_fix_amp_freq_vs_ST(df4d_amp_select; ΔT = 100, phase_select = fals
     plt = @df df4d_amp_select_phase_select plot(
         :freq,
         :stime,
-        group = :phase,
+        group=:phase,
         # palette = :RdYlBu_6,
-        palette = palette,
-        m = (2, 4),
-        legend_title = "Phase",
-        legend_position = :outertopright,
+        palette=palette,
+        m=(2, 4),
+        legend_title="Phase",
+        legend_position=:outertopright,
         # xlabel = "Switching Amplitude",
         # ylabel = "Switching Frequency"
-        dpi = 500,
+        dpi=500,
         # title = "Amplitude = 100"
         # bg = RGB(0.2, 0.2, 0.5)
     )
@@ -780,18 +840,18 @@ end
 
 
 ## ===== save plot and generate paths
-function save_plot(plt;filename = "switching_dynamics_const")
+function save_plot(plt; filename="switching_dynamics_const")
     @show db_idx
     class = "positive_pulse" * "_id_$db_idx" * "/ΔT = $ΔT" * "/activation_time/"
     # class = "oscillating_input1/" # saved two folder contains 2 ω near the transition.
     save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
     isdir(save_path) || mkpath(save_path) # create directory if not exist
-    u0 = [values(u0map)[i][2] for i ∈ 1: length(u0map)]
-    CSV.write(save_path * "initial_condition.csv", DataFrame(var = initi_names, values = u0))
+    u0 = [values(u0map)[i][2] for i ∈ 1:length(u0map)]
+    CSV.write(save_path * "initial_condition.csv", DataFrame(var=initi_names, values=u0))
     @show "initial_condition.csv is saved"
-    CSV.write(save_path * "parameter_set.csv", DataFrame(var = vcat([p_names, "ω", "A", "ϕ"]...), values = p))
+    CSV.write(save_path * "parameter_set.csv", DataFrame(var=vcat([p_names, "ω", "A", "ϕ"]...), values=p))
     @show "parameter_set.csv is saved"
-    final_save_path = save_path * "$filename" *"_A=$amplitude" * "_w=$freq" * "_ST=$t_switching" * ".png"
+    final_save_path = save_path * "$filename" * "_A=$amplitude" * "_w=$freq" * "_ST=$t_switching" * ".png"
     savefig(plt, final_save_path)
     @show "The saved path is here :\n $final_save_path"
 end
@@ -800,7 +860,7 @@ end
 
 ## ====== two genes plots comparison pathgen
 function pathgen(type::String)
-    class = "2genes_example/"*type*"/"
+    class = "2genes_example/" * type * "/"
     save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
     isdir(save_path) || mkpath(save_path)
     return save_path
@@ -887,7 +947,7 @@ end
 
 
 
-function plot_min_ST_ω(df; figure = "NA", plot_ontop = true, fixed_amp = fixed_amp)
+function plot_min_ST_ω(df; figure="NA", plot_ontop=true, fixed_amp=fixed_amp)
     # === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
     ST_ω_df = ST_ω(df)
     if plot_ontop == true

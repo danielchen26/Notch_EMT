@@ -386,21 +386,16 @@ plt_2genes_compare
 ## ================  Calculate the A ω ϕ st relation for a single gene. specify the db_idx number for a gene.========================
 db_idx = 49
 # db_idx = 600 # 🍏 paper figure 6
-df4d = A_ω_ϕ_st_relation(; model=model_pulsatile,
-    amplitude_range=0:50:300, freq_range=0:0.02:2,
-    ΔT=100, db_idx=db_idx, phase_sample_size=7)
-
-# df4d = A_ω_ϕ_st_relation(amplitude_range=0:50:300, freq_range=0:0.02:2, db_idx=db_idx)
-
-df4d_phase_0, _, _, df4d_phase_3, _, _, df4d_phase_6, df4d_amp_select = df4d_sub_gen(df4d, amplitude_select=300)
-
-plt_fix_phase_freq_vs_ST = df4d_fix_phase_freq_vs_ST(df4d_phase_0; amplitude_select=[100, 200, 300], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3]), save=true)
-plt_fix_amplitude_freq_vs_ST = df4d_fix_amp_freq_vs_ST(df4d_amp_select; phase_select=[0, 3, 6], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3]), save=true)
-# plt_fix_phase_freq_vs_ST = df4d_fix_phase_freq_vs_ST(df4d_phase_0; save=false)
-# plt_fix_amplitude_freq_vs_ST = df4d_fix_amp_freq_vs_ST(df4d_amp_select; save=false)
+df = A_ω_st_relation(; model=model_pulsatile,
+                    db_idx=db_idx,
+                    amplitude_range=0:50:300, 
+                    freq_range=0:0.02:2,
+                    ΔT=100)
+plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select = [], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3]), save=false)
 
 
 
+# ! not does need this, no phase is needed now
 ## =============== A-w-ϕ curve ================
 switch_amplitude = []
 switch_frequency = []
@@ -569,11 +564,10 @@ savefig(plt3, save_path * "./A-w_phase4-6.png")
 
 
 
-## ===## =============== A-w-ϕ curve if ϕ is not controllable================
+## * ===## =============== A-w-ϕ curve if ϕ is not controllable================
 switch_amplitude = []
 switch_frequency = []
-switch_phase = []
-T_init = 100.0
+T_init = 1e-10
 tspan = (0.0, 600.0)
 ΔT = 100.0
 @showprogress for freq in 0.0:0.1:1#exp10.(-4:0.05:1)

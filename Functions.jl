@@ -642,64 +642,48 @@ Note: T_init, ΔT, tspan will take from the Environment, and they are printed ou
 A_ω_ϕ_st_relation(;amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301)
 ```
 """
-function A_ω_ϕ_st_relation(; model=model, amplitude_range=100:20:300, freq_range=0:0.01:0.4, db_idx=301, T_init=100, ΔT=100, tspan_rt=4, phase_sample_size=6, prc2="NA", mute_parameter_disp=true)
+function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300, freq_range=0:0.01:0.4,  T_init=1e-10, ΔT=100, tspan_rt=2, prc2="NA", mute_parameter_disp=true)
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
-    switch_phase = []
+    # switch_phase = []
     switch_time = []
     println("One can change the following time variables in the environment")
     tspan = (0.0, tspan_rt * ΔT)
     @show T_init, ΔT, tspan
     @showprogress for amplitude ∈ amplitude_range
-        for freq_i ∈ freq_range # for each frequency, loop over phase to find the minimum switching time for a certain amplitude.
-            # switch_set = []
-            # for phase ∈ 0:2π
-            # for phase ∈ range(0,2π,length= phase_sample_size)
-            for phase ∈ range(0, 6, length=phase_sample_size)
-                _, _, _, _, ts, _, single_sol = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
-                t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
-                check = check_switching(single_sol, ts, tspan)
-
-                if check == -1
-                    push!(switch_time, t_switching)
-                    append!(switch_amplitude, amplitude)
-                    append!(switch_frequency, freq_i)
-                    append!(switch_phase, phase)
-
-                    # plt = plot(single_sol,
-                    # # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
-                    # vars = [ 6, 9], # [H4,H27]
-                    # lw = 2,
-                    # xlabel = "Time", ylabel = "Concentration",
-                    # foreground_color_legend = nothing,
-                    # # ylims = [0,500],
-                    # title = "A : $amplitude, freq = $freq_i, switch time : $t_switching",
-                    # dpi = 300)
-
-                end
+        for freq_i ∈ freq_range # 
+            freq_i !=0 ? phase = 3pi / 2 - freq_i * T_init : phase = 0 # reset phase when freq != 0
+            _, _, _, _, ts, _, single_sol, _ = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+            # t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+            t_switching_improved = isnothing(find_ST(single_sol)) ? "No Switching" : round(find_ST(single_sol), digits=2)
+            check = check_switching(single_sol, ts, tspan)
+            if check == -1
+                push!(switch_time, t_switching_improved)
+                append!(switch_amplitude, amplitude)
+                append!(switch_frequency, freq_i)
             end
         end
     end
-    A_ω_ϕ_st_database = DataFrame(freq=switch_frequency, phase=switch_phase, amp=switch_amplitude, stime=switch_time)
-    return A_ω_ϕ_st_database
+    A_ω_st_database = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time)
+    return A_ω_st_database
 end
 
-function df4d_sub_gen(df4d; fix_phase=true, fix_amp=true, amplitude_select=rand(unique(df4d.amp)))
-    if fix_phase == true
-        df4d_phase_0 = filter(row -> row.phase in [0], df4d)
-        df4d_phase_1 = filter(row -> row.phase in [1], df4d)
-        df4d_phase_2 = filter(row -> row.phase in [2], df4d)
-        df4d_phase_3 = filter(row -> row.phase in [3], df4d)
-        df4d_phase_4 = filter(row -> row.phase in [4], df4d)
-        df4d_phase_5 = filter(row -> row.phase in [5], df4d)
-        df4d_phase_6 = filter(row -> row.phase in [6], df4d)
-    end
-    if fix_amp == true
-        df4d_amp_select = filter(row -> row.amp in [amplitude_select], df4d)
-    end
-    return df4d_phase_0, df4d_phase_1, df4d_phase_2, df4d_phase_3, df4d_phase_4, df4d_phase_5, df4d_phase_6, df4d_amp_select
-end
+# function df4d_sub_gen(df4d; fix_phase=true, fix_amp=true, amplitude_select=rand(unique(df4d.amp)))
+#     if fix_phase == true
+#         df4d_phase_0 = filter(row -> row.phase in [0], df4d)
+#         df4d_phase_1 = filter(row -> row.phase in [1], df4d)
+#         df4d_phase_2 = filter(row -> row.phase in [2], df4d)
+#         df4d_phase_3 = filter(row -> row.phase in [3], df4d)
+#         df4d_phase_4 = filter(row -> row.phase in [4], df4d)
+#         df4d_phase_5 = filter(row -> row.phase in [5], df4d)
+#         df4d_phase_6 = filter(row -> row.phase in [6], df4d)
+#     end
+#     if fix_amp == true
+#         df4d_amp_select = filter(row -> row.amp in [amplitude_select], df4d)
+#     end
+#     return df4d_phase_0, df4d_phase_1, df4d_phase_2, df4d_phase_3, df4d_phase_4, df4d_phase_5, df4d_phase_6, df4d_amp_select
+# end
 
 ## plotting functions
 
@@ -770,13 +754,15 @@ end
 
 
 
-function df4d_fix_phase_freq_vs_ST(df4d_phase_0; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, save=false)
+function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, save=false)
     @show db_idx
     if isempty(amplitude_select) == false
-        df4d_phase_0_amp_select = filter(row -> row.amp in amplitude_select, df4d_phase_0)
+        df_amp_select = filter(row -> row.amp in amplitude_select, df)
         color_catg = length(amplitude_select)
+    elseif isempty(amplitude_select) == true
+        df_amp_select = df
     end
-    plt = @df df4d_phase_0_amp_select plot(
+    plt = @df df_amp_select plot(
         :freq,
         :stime,
         group=:amp,
@@ -804,38 +790,38 @@ end
 
 
 
-function df4d_fix_amp_freq_vs_ST(df4d_amp_select; ΔT=100, phase_select=false, palette=:RdYlBu_6, save=false)
-    @show db_idx
-    if isempty(phase_select) == false
-        df4d_amp_select_phase_select = filter(row -> row.phase in phase_select, df4d_amp_select)
-        color_catg = length(phase_select)
-    end
-    plt = @df df4d_amp_select_phase_select plot(
-        :freq,
-        :stime,
-        group=:phase,
-        # palette = :RdYlBu_6,
-        palette=palette,
-        m=(2, 4),
-        legend_title="Phase",
-        legend_position=:outertopright,
-        # xlabel = "Switching Amplitude",
-        # ylabel = "Switching Frequency"
-        dpi=500,
-        # title = "Amplitude = 100"
-        # bg = RGB(0.2, 0.2, 0.5)
-    )
-    xlabel!(plt, "Driving Frequency")
-    ylabel!(plt, "Switching Time (ST)")
-    if save
-        class = "positive_pulse" * "_id_$db_idx" * "/ΔT = $ΔT" * "/activation_time/"
-        save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
-        isdir(save_path) || mkpath(save_path) # create directory if not exist
-        amplitude_select = unique(df4d_amp_select.amp)[1]
-        savefig(plt, save_path * "Fix_amplitude($amplitude_select)_|_ω_vs_ST=" * ".png")
-    end
-    return plt
-end
+# function df4d_fix_amp_freq_vs_ST(df4d_amp_select; ΔT=100, phase_select=false, palette=:RdYlBu_6, save=false)
+#     @show db_idx
+#     if isempty(phase_select) == false
+#         df4d_amp_select_phase_select = filter(row -> row.phase in phase_select, df4d_amp_select)
+#         color_catg = length(phase_select)
+#     end
+#     plt = @df df4d_amp_select_phase_select plot(
+#         :freq,
+#         :stime,
+#         group=:phase,
+#         # palette = :RdYlBu_6,
+#         palette=palette,
+#         m=(2, 4),
+#         legend_title="Phase",
+#         legend_position=:outertopright,
+#         # xlabel = "Switching Amplitude",
+#         # ylabel = "Switching Frequency"
+#         dpi=500,
+#         # title = "Amplitude = 100"
+#         # bg = RGB(0.2, 0.2, 0.5)
+#     )
+#     xlabel!(plt, "Driving Frequency")
+#     ylabel!(plt, "Switching Time (ST)")
+#     if save
+#         class = "positive_pulse" * "_id_$db_idx" * "/ΔT = $ΔT" * "/activation_time/"
+#         save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
+#         isdir(save_path) || mkpath(save_path) # create directory if not exist
+#         amplitude_select = unique(df4d_amp_select.amp)[1]
+#         savefig(plt, save_path * "Fix_amplitude($amplitude_select)_|_ω_vs_ST=" * ".png")
+#     end
+#     return plt
+# end
 
 
 

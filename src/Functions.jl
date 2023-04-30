@@ -141,6 +141,28 @@ function check_switching(sol, ts, tspan)
     return init * after
 end
 
+
+
+
+# write a function to extract for each frequency the minimum driving amplitude
+function extract_min_amp(df::DataFrame)
+    # Group the dataframe by the 'freq' column
+    grouped_df = groupby(df, :freq)
+
+    # Initialize an empty dataframe to store the results
+    min_amp_df = DataFrame(freq=Float64[], min_amp=Float64[])
+
+    # Iterate over the groups and find the minimum amp for each freq
+    for group in grouped_df
+        min_amp = minimum(group[:, :amp])
+        freq = group[1, :freq]
+        push!(min_amp_df, (freq, min_amp))
+    end
+
+    return rename!(min_amp_df, :min_amp => :amp)
+end
+
+
 function add_Boundary_event(switch_amplitude, switch_frequency, plt)
     df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
     # CSV.write("switching_freq_amplitude.csv",df)
@@ -153,7 +175,7 @@ function add_Boundary_event(switch_amplitude, switch_frequency, plt)
 
     critical_freq = [keys(gp)[i].switch_frequency for i = 1:gp.ngroups]
     boundary_amplitude
-    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label="switching boundary", lw=3)
+    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label="Switching Boundary", lw=3)
 end
 
 # save A-w data
@@ -194,8 +216,9 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
     # @show pmap
     check = check_switching(sol, ts, tspan)
     println(check == -1 ? "Histone states swithced" : "NO swithing")
-    t_switching = switching_time(; sol=sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
-    t_switching = round(t_switching - T_init, digits=2)
+    # t_switching = switching_time(; sol=sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+    # t_switching = round(t_switching - T_init, digits=2)
+    t_switching = isnothing(find_ST(sol)) ? "No Swithing" : round(find_ST(sol), digits=2)
     @show t_switching
     if title == "on"
         plt = plot(sol,
@@ -642,7 +665,7 @@ Note: T_init, ΔT, tspan will take from the Environment, and they are printed ou
 A_ω_ϕ_st_relation(;amplitude_range = 100:20:300, freq_range = 0:0.01:0.4, db_idx = 301)
 ```
 """
-function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300, freq_range=0:0.01:0.4,  T_init=1e-10, ΔT=100, tspan_rt=2, prc2="NA", mute_parameter_disp=true)
+function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300, freq_range=0:0.01:0.4, T_init=1e-10, ΔT=100, tspan_rt=2, prc2="NA", mute_parameter_disp=true)
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
@@ -653,7 +676,7 @@ function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300,
     @show T_init, ΔT, tspan
     @showprogress for amplitude ∈ amplitude_range
         for freq_i ∈ freq_range # 
-            freq_i !=0 ? phase = 3pi / 2 - freq_i * T_init : phase = 0 # reset phase when freq != 0
+            freq_i != 0 ? phase = 3pi / 2 - freq_i * T_init : phase = 0 # reset phase when freq != 0
             _, _, _, _, ts, _, single_sol, _ = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
             # t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
             t_switching_improved = isnothing(find_ST(single_sol)) ? "No Switching" : round(find_ST(single_sol), digits=2)
@@ -769,8 +792,10 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
         palette=palette,
         # palette = Symbol("RdYlBu_"*"$color_catg"),
         m=(2, 4),
+        lw=3,
         legend_title="Amplitude",
         legend_position=:outertopright,
+        foreground_color_legend=nothing,
         # xlabel = "Switching Amplitude",
         # ylabel = "Switching Frequency"
         dpi=500,
@@ -780,12 +805,12 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
     xlabel!(plt, "Driving Frequency")
     ylabel!(plt, "Switching Time (ST)")
     if save
-        class = "positive_pulse" * "_id_$db_idx" * "/ΔT = $ΔT" * "/activation_time/"
-        save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
+        identifier = "_id_$db_idx/Driving_freq_vs_ST/"
+        save_path = joinpath(dirname(@__DIR__), "figures", identifier) # generate path to save
         isdir(save_path) || mkpath(save_path) # create directory if not exist
-        savefig(plt, save_path * "Fix_phase_|_ω_vs_ST" * ".png")
+        savefig(plt, save_path * "ω_vs_ST" * ".png")
     end
-    return plt
+    return plt, save_path
 end
 
 
@@ -845,13 +870,38 @@ end
 
 
 ## ====== two genes plots comparison pathgen
-function pathgen(type::String)
-    class = "2genes_example/" * type * "/"
-    save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
-    isdir(save_path) || mkpath(save_path)
-    return save_path
-end
+# function pathgen(type::String)
+#     class = "2genes_example/" * type * "/"
+#     save_path = joinpath(@__DIR__, "figures", "switching_dynamics/$class") # generate path to save
+#     isdir(save_path) || mkpath(save_path)
+#     return save_path
+# end
 
+"""
+    pathgen(;num_genes::Int, type::String)
+# Example 
+- `type` can be `pulsatile` or `bump` or be expressive like `Dll1_vs_Dll4`
+- `number_of_genes` is the number of genes
+```julia
+pathgen(num_genes = 2, type = "pulsatile")
+pathgen(num_genes = 2, type = "Dll4_vs_Dll1")
+````
+"""
+function pathgen(; db_idx::Union{Int,Vector{Int}}, type::String)
+    # generate figure saving path
+    num_genes = length(db_idx)
+    identifier_1gene = "$num_genes gene /_id_$db_idx/ $type/"
+    identifier_2genes = "$num_genes gene /_id_$db_idx/$type/"
+    num_genes == 1 ? identifier = identifier_1gene : identifier = identifier_2genes
+    figure_save_path = joinpath(dirname(@__DIR__), "figures", identifier) # generate path to save
+    isdir(figure_save_path) || mkpath(figure_save_path) #
+
+    # generate df saving path
+    df_save_path = joinpath(dirname(@__DIR__), "Data", "regular", "db_idx:$db_idx/")
+    isdir(df_save_path) || mkpath(df_save_path)
+
+    return df_save_path, figure_save_path 
+end
 
 ## === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
 function ST_ω(df)

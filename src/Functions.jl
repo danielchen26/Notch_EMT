@@ -669,15 +669,15 @@ function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300,
     @show db_idx, prc2
     switch_amplitude = []
     switch_frequency = []
-    # switch_phase = []
     switch_time = []
+    switch_prc2 = []
     println("One can change the following time variables in the environment")
     tspan = (0.0, tspan_rt * ΔT)
     @show T_init, ΔT, tspan
     @showprogress for amplitude ∈ amplitude_range
         for freq_i ∈ freq_range # 
             freq_i != 0 ? phase = 3pi / 2 - freq_i * T_init : phase = 0 # reset phase when freq != 0
-            _, _, _, _, ts, _, single_sol, _ = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+            u0map, pmap, p, tspan, ts, cb, single_sol, _ = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
             # t_switching = switching_time(; sol=single_sol, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
             t_switching_improved = isnothing(find_ST(single_sol)) ? "No Switching" : round(find_ST(single_sol), digits=2)
             check = check_switching(single_sol, ts, tspan)
@@ -685,12 +685,53 @@ function A_ω_st_relation(; model=model, db_idx=301, amplitude_range=100:20:300,
                 push!(switch_time, t_switching_improved)
                 append!(switch_amplitude, amplitude)
                 append!(switch_frequency, freq_i)
+                append!(switch_prc2, p[5])
             end
         end
     end
-    A_ω_st_database = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time)
+    A_ω_st_database = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time, prc2=switch_prc2)
     return A_ω_st_database
 end
+
+
+function A_ω_st_relation_prc2_range(; model=model, db_idx=301, amplitude_range=100:20:300, freq_range=0:0.01:0.4, T_init=1e-10, ΔT=100, tspan_rt=2, prc2_range="NA", mute_parameter_disp=true)
+    all_dataframes = []
+
+    for prc2 in prc2_range
+        @show db_idx, prc2
+        switch_amplitude = []
+        switch_frequency = []
+        switch_time = []
+        switch_prc2 = []
+        println("One can change the following time variables in the environment")
+        tspan = (0.0, tspan_rt * ΔT)
+        @show T_init, ΔT, tspan
+        @showprogress for amplitude ∈ amplitude_range
+            for freq_i ∈ freq_range
+                freq_i != 0 ? phase = 3pi / 2 - freq_i * T_init : phase = 0
+                u0map, pmap, p, tspan, ts, cb, single_sol, _ = single_solve(; model=model, db_idx=db_idx, freq=freq_i, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+                t_switching_improved = isnothing(find_ST(single_sol)) ? "No Switching" : round(find_ST(single_sol), digits=2)
+                check = check_switching(single_sol, ts, tspan)
+                if check == -1
+                    push!(switch_time, t_switching_improved)
+                    append!(switch_amplitude, amplitude)
+                    append!(switch_frequency, freq_i)
+                    append!(switch_prc2, p[5])
+                end
+            end
+        end
+        A_ω_st_database = DataFrame(freq=switch_frequency, amp=switch_amplitude, stime=switch_time, prc2=switch_prc2)
+        push!(all_dataframes, A_ω_st_database)
+    end
+
+    combined_dataframe = vcat(all_dataframes...)
+    return combined_dataframe
+end
+
+
+
+
+
 
 # function df4d_sub_gen(df4d; fix_phase=true, fix_amp=true, amplitude_select=rand(unique(df4d.amp)))
 #     if fix_phase == true
@@ -777,7 +818,7 @@ end
 
 
 
-function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, save=false)
+function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, figure_save_path=nothing)
     @show db_idx
     if isempty(amplitude_select) == false
         df_amp_select = filter(row -> row.amp in amplitude_select, df)
@@ -804,13 +845,10 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
     )
     xlabel!(plt, "Driving Frequency")
     ylabel!(plt, "Switching Time (ST)")
-    if save
-        identifier = "_id_$db_idx/Driving_freq_vs_ST/"
-        save_path = joinpath(dirname(@__DIR__), "figures", identifier) # generate path to save
-        isdir(save_path) || mkpath(save_path) # create directory if not exist
-        savefig(plt, save_path * "ω_vs_ST" * ".png")
+    if figure_save_path != nothing
+        savefig(plt, figure_save_path * "ω_vs_ST" * ".png")
     end
-    return plt, save_path
+    return plt
 end
 
 
@@ -890,8 +928,8 @@ pathgen(num_genes = 2, type = "Dll4_vs_Dll1")
 function pathgen(; db_idx::Union{Int,Vector{Int}}, type::String)
     # generate figure saving path
     num_genes = length(db_idx)
-    identifier_1gene = "$num_genes gene /_id_$db_idx/ $type/"
-    identifier_2genes = "$num_genes gene /_id_$db_idx/$type/"
+    identifier_1gene = "$num_genes gene/id_$db_idx/$type/"
+    identifier_2genes = "$num_genes genes/id_$db_idx/$type/"
     num_genes == 1 ? identifier = identifier_1gene : identifier = identifier_2genes
     figure_save_path = joinpath(dirname(@__DIR__), "figures", identifier) # generate path to save
     isdir(figure_save_path) || mkpath(figure_save_path) #
@@ -900,7 +938,7 @@ function pathgen(; db_idx::Union{Int,Vector{Int}}, type::String)
     df_save_path = joinpath(dirname(@__DIR__), "Data", "regular", "db_idx:$db_idx/")
     isdir(df_save_path) || mkpath(df_save_path)
 
-    return df_save_path, figure_save_path 
+    return df_save_path, figure_save_path
 end
 
 ## === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
@@ -911,10 +949,10 @@ end
 
 
 # for multi gene case ---(ϕ indenpent)
-function A_ω_ϕ_st_relation_multi_gene(; model=model, amplitude_range=0:50:300, freq_range=0:0.01:2, gene_set_id=[49, 592], phase_sample_size=6, prc2="NA", mute_parameter_disp=false)
-    gene_set_A_ω_ϕ_st_df = []
+function A_ω_st_multi_genes(; model=model, amplitude_range=0:50:300, freq_range=0:0.01:2, gene_set_id=[49, 592], phase_sample_size=6, prc2="NA", mute_parameter_disp=false)
+    gene_set_A_ω_st_df = []
     for gene_id in gene_set_id
-        gene_i_df = A_ω_ϕ_st_relation(amplitude_range=amplitude_range, freq_range=freq_range, db_idx=gene_id, phase_sample_size=phase_sample_size, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
+        gene_i_df = A_ω_st_relation(amplitude_range=amplitude_range, freq_range=freq_range, db_idx=gene_id, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
         if isempty(gene_i_df)
             println("No data for gene_id = ", gene_id)
             break
@@ -924,11 +962,26 @@ function A_ω_ϕ_st_relation_multi_gene(; model=model, amplitude_range=0:50:300,
         ST_ω_df = ST_ω(gene_i_df)
         ST_ω_df[!, :gene_id] .= gene_id
         @show ST_ω_df
-        push!(gene_set_A_ω_ϕ_st_df, ST_ω_df)
+        push!(gene_set_A_ω_st_df, ST_ω_df)
     end
-    @show gene_set_A_ω_ϕ_st_df
-    return vcat(gene_set_A_ω_ϕ_st_df...)
+    @show gene_set_A_ω_st_df
+    return vcat(gene_set_A_ω_st_df...)
 end
+
+
+function A_ω_st_prc2_multi_genes(; gene_set_id::Vector{Int}, model=model, amplitude_range=100:20:300, freq_range=0:0.01:0.4, T_init=1e-10, ΔT=100, tspan_rt=2, prc2_range=0:0.1:1, mute_parameter_disp=true)
+    all_gene_dataframes = []
+    
+    for gene_id in gene_set_id
+        gene_dataframe = A_ω_st_relation_prc2_range(model=model, db_idx=gene_id, amplitude_range=amplitude_range, freq_range=freq_range, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2_range=prc2_range, mute_parameter_disp=mute_parameter_disp)
+        gene_dataframe[!, :gene_id] =  fill(gene_id, nrow(gene_dataframe)) # Add a new column 'gene_id' with the current gene ID
+        push!(all_gene_dataframes, gene_dataframe)
+    end
+
+    combined_gene_dataframe = vcat(all_gene_dataframes...)
+    return combined_gene_dataframe
+end
+
 
 
 
@@ -982,46 +1035,46 @@ function Gen_df_stack_prc2_increase(; model=model, amplitude_range=0:50:300, fre
 end
 
 
-
-function plot_min_ST_ω(df; figure="NA", plot_ontop=true, fixed_amp=fixed_amp)
-    # === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
-    ST_ω_df = ST_ω(df)
-    if plot_ontop == true
-        plt = @df ST_ω_df plot!(figure,
-            :freq,
-            :stime_minimum,
-            group=:amp,
-            palette=:RdYlBu_6,
-            m=(0.8, 2),
-            legend_title="db_idx",
-            legend_position=:outertopright,
-            linewidth=5,
-            xlabel=L"Switching Frequency ( $\omega$ )",
-            ylabel="Switching Time (ST)",
-            dpi=500,
-            foreground_color_legend=nothing,
-            title="Amplitude = $fixed_amp",
-            label="db_idx = $db_idx"
-        )
-    else
-        plt = @df ST_ω_df plot(
-            :freq,
-            :stime_minimum,
-            group=:amp,
-            palette=:RdYlBu_6,
-            m=(0.8, 2),
-            # legend_title="Amplitude",
-            legend_title="db_idx",
-            legend_position=:outertopright,
-            linewidth=5,
-            xlabel=L"Switching Frequency ( $\omega$ )",
-            ylabel="Switching Time (ST)",
-            dpi=500,
-            foreground_color_legend=nothing,
-            title="Amplitude = $fixed_amp",
-            label="db_idx = $db_idx"
-            # bg = RGB(0.2, 0.2, 0.5)
-        )
-    end
-    return plt
-end
+# # dump this function 
+# function plot_min_ST_ω(df; figure="NA", plot_ontop=true, fixed_amp=fixed_amp)
+#     # === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
+#     ST_ω_df = ST_ω(df)
+#     if plot_ontop == true
+#         plt = @df ST_ω_df plot!(figure,
+#             :freq,
+#             :stime_minimum,
+#             group=:amp,
+#             palette=:RdYlBu_6,
+#             m=(0.8, 2),
+#             legend_title="db_idx",
+#             legend_position=:outertopright,
+#             linewidth=5,
+#             xlabel=L"Switching Frequency ( $\omega$ )",
+#             ylabel="Switching Time (ST)",
+#             dpi=500,
+#             foreground_color_legend=nothing,
+#             title="Amplitude = $fixed_amp",
+#             label="db_idx = $db_idx"
+#         )
+#     else
+#         plt = @df ST_ω_df plot(
+#             :freq,
+#             :stime_minimum,
+#             group=:amp,
+#             palette=:RdYlBu_6,
+#             m=(0.8, 2),
+#             # legend_title="Amplitude",
+#             legend_title="db_idx",
+#             legend_position=:outertopright,
+#             linewidth=5,
+#             xlabel=L"Switching Frequency ( $\omega$ )",
+#             ylabel="Switching Time (ST)",
+#             dpi=500,
+#             foreground_color_legend=nothing,
+#             title="Amplitude = $fixed_amp",
+#             label="db_idx = $db_idx"
+#             # bg = RGB(0.2, 0.2, 0.5)
+#         )
+#     end
+#     return plt
+# end

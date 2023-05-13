@@ -1,0 +1,67 @@
+{
+    "arch": "arm64",
+    "build": "h1a8c8d9_8",
+    "build_number": 8,
+    "build_string": "h1a8c8d9_8",
+    "channel": "https://conda.anaconda.org/conda-forge/osx-arm64",
+    "constrains": [],
+    "depends": [
+        "libbrotlicommon 1.0.9 h1a8c8d9_8"
+    ],
+    "extracted_package_dir": "/Users/chentianchi/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/libbrotlienc-1.0.9-h1a8c8d9_8",
+    "files": [
+        "lib/libbrotlienc.1.0.9.dylib",
+        "lib/libbrotlienc.1.dylib",
+        "lib/libbrotlienc.dylib",
+        "lib/pkgconfig/libbrotlienc.pc"
+    ],
+    "fn": "libbrotlienc-1.0.9-h1a8c8d9_8.tar.bz2",
+    "license": "MIT",
+    "link": {
+        "source": "/Users/chentianchi/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/libbrotlienc-1.0.9-h1a8c8d9_8",
+        "type": 1
+    },
+    "md5": "572907b78be867937c258421bc0807a8",
+    "name": "libbrotlienc",
+    "package_tarball_full_path": "/Users/chentianchi/.julia/scratchspaces/0b3b1443-0f03-428d-bdfb-f27f9c1191ea/root/pkgs/libbrotlienc-1.0.9-h1a8c8d9_8.tar.bz2",
+    "paths_data": {
+        "paths": [
+            {
+                "_path": "lib/libbrotlienc.1.0.9.dylib",
+                "path_type": "hardlink",
+                "sha256": "f5ca56bdda7fe8538f0f0499e1ef67215cef466d6850cef8c70f68253861025d",
+                "sha256_in_prefix": "f5ca56bdda7fe8538f0f0499e1ef67215cef466d6850cef8c70f68253861025d",
+                "size_in_bytes": 670208
+            },
+            {
+                "_path": "lib/libbrotlienc.1.dylib",
+                "path_type": "softlink",
+                "sha256_in_prefix": "f5ca56bdda7fe8538f0f0499e1ef67215cef466d6850cef8c70f68253861025d",
+                "size_in_bytes": 670208
+            },
+            {
+                "_path": "lib/libbrotlienc.dylib",
+                "path_type": "softlink",
+                "sha256_in_prefix": "f5ca56bdda7fe8538f0f0499e1ef67215cef466d6850cef8c70f68253861025d",
+                "size_in_bytes": 670208
+            },
+            {
+                "_path": "lib/pkgconfig/libbrotlienc.pc",
+                "path_type": "hardlink",
+                "sha256": "0edbc8ccd572005fae87e33f42698831258359bb27038f5971bc0e4f7402fcf6",
+                "sha256_in_prefix": "f7d3145b2bf77c6bbea536048a6d95f21a24ab345d8980f819533ac4e4ba7eb8",
+                "size_in_bytes": 787
+            }
+        ],
+        "paths_version": 1
+    },
+    "platform": "osx",
+    "requested_spec": "",
+    "sha256": "c5f65062cd41d5f5fd93eadd276885efbe7ce7c9346155852d4f5b619f8a166f",
+    "size": 305205,
+    "subdir": "osx-arm64",
+    "timestamp": 1666789010699,
+    "track_features": "",
+    "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libbrotlienc-1.0.9-h1a8c8d9_8.tar.bz2",
+    "version": "1.0.9"
+}

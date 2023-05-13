@@ -210,9 +210,9 @@ function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT
 end
 
 
-function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init, ΔT, type="pulsatile", title="on", phase_reset=true)
-    tspan = (0.0, T_init + 3 * ΔT)
-    u0map, pmap, p, tspan, ts, cb, sol, phase = single_solve(; model=model, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, phase_reset=phase_reset)
+function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init, ΔT, type="pulsatile", title="on", phase_reset=true, T_final = 3*ΔT, arg...)
+    tspan = (0.0, T_init + T_final)
+    u0map, pmap, p, tspan, ts, cb, sol, phase = single_solve(; model=model, db_idx=db_idx, freq=freq, phase=phase, amplitude=amplitude, T_init=T_init, ΔT=ΔT, tspan=tspan, phase_reset=phase_reset, arg...)
     # @show pmap
     check = check_switching(sol, ts, tspan)
     println(check == -1 ? "Histone states swithced" : "NO swithing")
@@ -426,10 +426,10 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
     end
     sol_gene2, ts2, tspan2 = remake_solve_prob_by_ID(; model=model, db_idx=id2, freq=id2_freq, phase=phase2, amplitude=amplitude2, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2=prc2)
     check2 = check_switching(sol_gene2, ts2, tspan2)
-    t_switching2 = switching_time(; sol=sol_gene2, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
-    t_switching2 = round(t_switching2 - T_init, digits=3)
+    # t_switching2 = switching_time(; sol=sol_gene2, pulse_period=T_init:0.1:T_init+ΔT, idx=[6, 9], return_plot=false)
+    # t_switching2 = round(t_switching2 - T_init, digits=3)
     t_switching2_improved = isnothing(find_ST(sol_gene2)) ? "No Switching" : round(find_ST(sol_gene2), digits=2)
-    @show t_switching2, t_switching2_improved
+    @show t_switching2_improved
 
     tt = ts2[1]:0.01:ts2[2]
     if title_on == true && legend_title_on == true
@@ -818,7 +818,7 @@ end
 
 
 
-function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, figure_save_path=nothing)
+function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, figure_save_path=nothing, arg...)
     @show db_idx
     if isempty(amplitude_select) == false
         df_amp_select = filter(row -> row.amp in amplitude_select, df)
@@ -835,21 +835,34 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
         m=(2, 4),
         lw=3,
         legend_title="Amplitude",
-        legend_position=:outertopright,
-        foreground_color_legend=nothing,
+        # legend_position=:topright,
+        legend_position=:topleft,
+        # foreground_color_legend=nothing,
+        # fg_legend = :false,
+        # frameon=false,
         # xlabel = "Switching Amplitude",
         # ylabel = "Switching Frequency"
         dpi=500,
         # title = "Amplitude = 100"
-        # bg = RGB(0.2, 0.2, 0.5)
+        # bg = RGB(0.2, 0.2, 0.5),
+        arg...
     )
-    xlabel!(plt, "Driving Frequency")
+
+    xlabel!(plt, L"Driving Frequency ($\omega$)")
+    # xlabel!(plt, L"Driving Frequency $(L"\omega")")
     ylabel!(plt, "Switching Time (ST)")
     if figure_save_path != nothing
         savefig(plt, figure_save_path * "ω_vs_ST" * ".png")
     end
     return plt
 end
+
+
+
+
+
+
+
 
 
 
@@ -971,10 +984,10 @@ end
 
 function A_ω_st_prc2_multi_genes(; gene_set_id::Vector{Int}, model=model, amplitude_range=100:20:300, freq_range=0:0.01:0.4, T_init=1e-10, ΔT=100, tspan_rt=2, prc2_range=0:0.1:1, mute_parameter_disp=true)
     all_gene_dataframes = []
-    
+
     for gene_id in gene_set_id
         gene_dataframe = A_ω_st_relation_prc2_range(model=model, db_idx=gene_id, amplitude_range=amplitude_range, freq_range=freq_range, T_init=T_init, ΔT=ΔT, tspan_rt=tspan_rt, prc2_range=prc2_range, mute_parameter_disp=mute_parameter_disp)
-        gene_dataframe[!, :gene_id] =  fill(gene_id, nrow(gene_dataframe)) # Add a new column 'gene_id' with the current gene ID
+        gene_dataframe[!, :gene_id] = fill(gene_id, nrow(gene_dataframe)) # Add a new column 'gene_id' with the current gene ID
         push!(all_gene_dataframes, gene_dataframe)
     end
 
@@ -1035,46 +1048,95 @@ function Gen_df_stack_prc2_increase(; model=model, amplitude_range=0:50:300, fre
 end
 
 
-# # dump this function 
-# function plot_min_ST_ω(df; figure="NA", plot_ontop=true, fixed_amp=fixed_amp)
-#     # === groupby Amplitude and frequency, and return for each (A, ω) the minimum ST 
-#     ST_ω_df = ST_ω(df)
-#     if plot_ontop == true
-#         plt = @df ST_ω_df plot!(figure,
-#             :freq,
-#             :stime_minimum,
-#             group=:amp,
-#             palette=:RdYlBu_6,
-#             m=(0.8, 2),
-#             legend_title="db_idx",
-#             legend_position=:outertopright,
-#             linewidth=5,
-#             xlabel=L"Switching Frequency ( $\omega$ )",
-#             ylabel="Switching Time (ST)",
-#             dpi=500,
-#             foreground_color_legend=nothing,
-#             title="Amplitude = $fixed_amp",
-#             label="db_idx = $db_idx"
-#         )
-#     else
-#         plt = @df ST_ω_df plot(
-#             :freq,
-#             :stime_minimum,
-#             group=:amp,
-#             palette=:RdYlBu_6,
-#             m=(0.8, 2),
-#             # legend_title="Amplitude",
-#             legend_title="db_idx",
-#             legend_position=:outertopright,
-#             linewidth=5,
-#             xlabel=L"Switching Frequency ( $\omega$ )",
-#             ylabel="Switching Time (ST)",
-#             dpi=500,
-#             foreground_color_legend=nothing,
-#             title="Amplitude = $fixed_amp",
-#             label="db_idx = $db_idx"
-#             # bg = RGB(0.2, 0.2, 0.5)
-#         )
-#     end
-#     return plt
-# end
+# ======== loading freq :0.0:0.02:2.0_|_amplitude :50:50:300.csv data =====
+function load_csv_files(path::String, prefix::String, idx_range::AbstractRange, csv_filename::String)
+    df_set = []
+    for i in idx_range
+        folder_path = joinpath(path, "$(prefix)$(i)")
+        file_path = joinpath(folder_path, csv_filename)
+        if isfile(file_path)
+            df = CSV.read(file_path, DataFrame)
+            push!(df_set, df)
+        else
+            println("File not found: $file_path")
+        end
+    end
+    combined_df = DataFrame()
+    for (i, df) in enumerate(df_set)
+        df[!, :gene_id] = fill(idx_range[i], nrow(df))
+        combined_df = vcat(combined_df, df)
+    end
+    return df_set, combined_df
+end
+
+
+
+function filter_by_gene_id(df::DataFrame, gene_id_values::Vector{Int})
+    filtered_df = df[in.(df.gene_id, Ref(gene_id_values)), :]
+    return filtered_df
+end
+
+
+
+function plot_prc2_vs_ST(; df_2genes::DataFrame, fixed_amp=100, freq_selection, fontsize=font(16), xlims = (0,1))
+    gene_ids = unique(df_2genes.gene_id)
+    fixed_amp = fixed_amp
+    gene1_df = filter(row -> row.freq == freq_selection[1] && row.amp == fixed_amp && row.gene_id == gene_ids[1], df_2genes)
+    gene2_df = filter(row -> row.freq == freq_selection[2] && row.amp == fixed_amp && row.gene_id == gene_ids[2], df_2genes)
+    plt1 = @df gene1_df plot(:prc2, :stime,
+        palette=:tab10,
+        legend_title="Genes",
+        legend_position=:topleft,
+        linewidth=2,
+        xlabel="PRC2 rate",
+        ylabel="Switching Time (ST)",
+        dpi=500,
+        foreground_color_legend=nothing,
+        title="Amplitude = $(fixed_amp)",
+        label="Gene 1 (Pusatile frequency = $(freq_selection[1]))",
+        tickfont=fontsize,
+        guidefont=fontsize,
+        legendfont=fontsize,
+        xlims = xlims
+    )
+    plt2 = @df gene2_df plot!(plt1, :prc2, :stime,
+        palette=:RdYlBu_6,
+        legend_title="Genes",
+        legend_position=:topleft,
+        linewidth=2,
+        xlabel="PRC2 rate",
+        ylabel="Switching Time (ST)",
+        dpi=500,
+        foreground_color_legend=nothing,
+        title="Amplitude = $(fixed_amp)",
+        label="Gene 2 (Sustained, frequency = $(freq_selection[2]))",
+        tickfont=fontsize,
+        guidefont=fontsize,
+        legendfont=fontsize,
+        xlims = xlims
+    )
+end
+
+
+function plot_prc2_vs_ST_amp_dependent(; df_2genes::DataFrame, fixed_amp_set=unique(df_2genes.amp), freq_selection=[0.1, 0.9], size=(1600, 1600), layout=(3, 2), fontsize=font(16), xlims = (0,1))
+    plt_prc2_ST_set = []
+    for fixed_amp in fixed_amp_set
+        plt_prc2_ST = plot_prc2_vs_ST(df_2genes=df_2genes, fixed_amp=fixed_amp, freq_selection=freq_selection, fontsize=fontsize, xlims = xlims)
+        push!(plt_prc2_ST_set, plt_prc2_ST)
+    end
+    return plot(plt_prc2_ST_set..., layout=layout, dpi=500, size=size)
+end
+
+
+
+#! =======================   generate Figure 9 in paper =================
+function plot_Dll1vs_Dll4_prc2_ST_by_amplitude(; df_2genes=df_2genes, fixed_amp_set=[50, 300], freq_selection=[0.3, 0], layout=(1, 2), size=(800, 400), fontsize=font(8), save = false, filename = nothing)
+    gr(fontfamily="Helvetica")
+    Dll1vs_Dll4_prc2_ST_by_amplitude_id = plot_prc2_vs_ST_amp_dependent(; df_2genes=df_2genes, fixed_amp_set=fixed_amp_set, freq_selection=freq_selection, layout=layout, size=size, fontsize=fontsize)
+    display(Dll1vs_Dll4_prc2_ST_by_amplitude_id)
+    if save == true && isnothing(filename)
+        savefig(Dll1vs_Dll4_prc2_ST_by_amplitude_id, "Dll1vs_Dll4_prc2_ST_by_amplitude.png")
+    elseif save == true && !isnothing(filename)
+        savefig(Dll1vs_Dll4_prc2_ST_by_amplitude_id, filename*".png")
+    end
+end

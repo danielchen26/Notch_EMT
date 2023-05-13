@@ -1,0 +1,14 @@
+prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+exec_prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+libdir=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/lib
+includedir=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/include
+
+Name: FreeType 2
+URL: https://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 24.3.18
+Requires: 
+Requires.private: 
+Libs: -L/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/lib -lfreetype
+Libs.private: -lz -L/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/lib -lpng16 -lz
+Cflags: -I${includedir}/freetype2

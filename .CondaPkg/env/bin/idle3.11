@@ -1,0 +1,5 @@
+#!/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/bin/python3.11
+
+from idlelib.pyshell import main
+if __name__ == '__main__':
+    main()

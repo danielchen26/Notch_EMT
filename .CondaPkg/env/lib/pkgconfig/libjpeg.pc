@@ -1,0 +1,10 @@
+prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+exec_prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+libdir=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/lib
+includedir=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env/include
+
+Name: libjpeg
+Description: A SIMD-accelerated JPEG codec that provides the libjpeg API
+Version: 2.1.5.1
+Libs: -L${libdir} -ljpeg
+Cflags: -I${includedir}

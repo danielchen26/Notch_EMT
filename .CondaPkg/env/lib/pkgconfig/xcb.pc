@@ -1,0 +1,13 @@
+prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+xcbproto_version=1.13
+
+Name: XCB
+Description: X-protocol C Binding
+Version: 1.13
+Requires.private: pthread-stubs xau >= 0.99.2 xdmcp
+Libs: -L${libdir} -lxcb
+Libs.private: 
+Cflags: -I${includedir}

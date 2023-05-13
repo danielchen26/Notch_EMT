@@ -1,0 +1,12 @@
+prefix=/Users/chentianchi/Desktop/M1_pro_Projects/Notch_EMT/Notch_Epi/Notch_force_ligand_dynamics/.CondaPkg/env
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libtiff
+Description:  Tag Image File Format (TIFF) library.
+Version: 4.5.0
+Libs: -L${libdir} -ltiff
+Libs.private: -lwebp -lzstd -llzma -lLerc -ljpeg -ldeflate -lz 
+Cflags: -I${includedir}
+Requires.private: libwebp libzstd liblzma libjpeg libdeflate zlib 

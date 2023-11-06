@@ -492,7 +492,7 @@ function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Sy
     return plt
 end
 
-A_w_prc2_curve = plot_all_prc2(df_592_3d, :prc2, :amp, :freq)
+A_w_prc2_curve = plot_all_prc2(df_592_3d, :prc2, :amp, :freq; legend=:outerright, foreground_color_legend=nothing, legendfontsize=7, legentitlefontsize=4, legendtitle="A-ω decision boundary\nregulated by PRC2 rate")
 savefig(A_w_prc2_curve, "A_w_prc2_curve_id_592.png")
 
 

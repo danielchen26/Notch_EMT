@@ -471,6 +471,8 @@ df_592_3d = A_ω_st_relation_prc2_range(; model=model_pulsatile,
     prc2_range=0.1:0.1:1,
     ΔT=100)
 
+CSV.write("df_592_3d.csv", df_592_3d)
+
 function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol;kwargs...)
     pyplot()
     # group by prc2 column
@@ -498,9 +500,33 @@ savefig(A_w_prc2_curve, "A_w_prc2_curve_id_592.png")
 
 df_592_3d
 
+# ===== added plotting function for 3d scatter plot for A-ω-stime groupby prc2 relation ======
+# Plot 3D scatter plot of A-ω-ST relation grouped by PRC2 rate
+# Plots a 3D scatter plot of amplitude, frequency and switching time data
+# with points grouped and colored by PRC2 rate. Takes a DataFrame with columns
+# for amplitude, frequency, switching time and PRC2 rate. Groups data by PRC2 
+# rate and plots each group on the same 3D plot with different colors.
+function plot_all_prc2_3d(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol, z_col::Symbol; kwargs...)
+    # group by prc2 column
+    grouped_df = groupby(df, prc2_col)
+    # create plot object
+    plt = plot(xlabel="Driving Amplitude (A)",
+        ylabel="Driving Frequency (ω)", zlabel="Switching Time (ST)", dpi=500, titlefont=font(10, "Arial"))
+    # loop through each group and plot on same plot with different colors
+    for (i, group) in enumerate(grouped_df)
+        # extract data for group
+        each_group = DataFrame(group)
+        # plot frequency vs amplitude vs switching time
+    scatter!(plt, each_group[!, x_col], each_group[!, y_col], each_group[!, z_col], label=  string(each_group[1, prc2_col]); kwargs...)
+    end
+    return plt
+end
 
-
-
+plt_3d_prc2 = plot_all_prc2_3d(df_592_3d,
+                 :prc2, :amp, :freq, :stime;
+                m=1.5, guidefontsize=7, alpha = 0.6,
+                legendtitle = " PRC2 rates")
+savefig(plt_3d_prc2, "figures/df_592_3d_by_prc2.html")
 
 
 ## ====== Generate the dataframe for the A ω st prc2 relation for a multi gene. ==========

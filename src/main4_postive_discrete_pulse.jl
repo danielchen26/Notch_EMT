@@ -30,7 +30,7 @@ rn_latex, ode_latex = ode_latex_gen(model_pulsatile);
 # Graph(model_pulsatile)
 # ODE_equations = convert(ODESystem, model_pulsatile)
 # @show latexify(ODE_equations
-## ============================== single test un for the model 🍏 works =============================
+## ============================== single test run for the model 🍏 works =============================
 # 🔴
 db_idx = 592
 freq = 0.0;
@@ -92,6 +92,8 @@ function single_solve_plot_pulsatile_bump(; db_idx=49, phase=0, freq=0.5, amplit
     plt_bump = single_solve_plot(; model=model_bump, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="bump")
     plot(plt_pulsatile, plt_bump, layout=(2, 1))
 end
+
+single_solve_plot_pulsatile_bump()
 
 
 #! Have to set T_init to 0.01 to avoid the discontinuity
@@ -336,10 +338,10 @@ plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=collect(50:50:30
 ## ===========================================================================================
 
 
-## ==== the relationship between driving amplitude and driving frequency ========
+## ==== the relationship between driving amplitude and driving frequency  ========
 # ---- first trim the database with each frequency and its associated minimum amplutide
 df_min_amp = extract_min_amp(df)
-# ---- plot the driving frequency vs driving minimum amplitude
+# ---- plot the driving frequency vs driving minimum amplitude 🔴 Figure 6(a) -------
 min_amp_vs_freq_plt = plot(df_min_amp.amp, df_min_amp.freq, seriestype=:scatter, #yaxis=:log10,
     label="Switching Event",
     xlabel="Driving Amplitude", ylabel="Driving Frequency", dpi=500)
@@ -469,13 +471,13 @@ df_592_3d = A_ω_st_relation_prc2_range(; model=model_pulsatile,
     prc2_range=0.1:0.1:1,
     ΔT=100)
 
-function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol)
+function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol;kwargs...)
     pyplot()
     # group by prc2 column
     grouped_df = groupby(df, prc2_col)
     # create plot object
     plt = plot(xlabel="Driving Amplitude (A)",
-        ylabel=L"Driving Frequency ($\omega$)", dpi=500)
+        ylabel=L"Driving Frequency ($\omega$)", dpi=500; kwargs...)
     # loop through each group and plot on same plot with different colors
     for group in grouped_df
         # extract data for group

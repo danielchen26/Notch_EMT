@@ -87,20 +87,21 @@ plt_2model = plot(plt_pulsatile, plt_bump, layout=(2, 1))
 
 
 # write a function to plot 1 gene comparing pulsatile case vs bump case
-function single_solve_plot_pulsatile_bump(; db_idx=49, phase=0, freq=0.5, amplitude=65.0, T_init=0.01, ΔT=100)
-    plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="pulsatile")
-    plt_bump = single_solve_plot(; model=model_bump, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="bump")
-    plot(plt_pulsatile, plt_bump, layout=(2, 1))
-end
+# # ! moved to single_gene_case.jl
+# function single_solve_plot_pulsatile_bump(; db_idx=49, phase=0, freq=0.5, amplitude=65.0, T_init=0.01, ΔT=100)
+#     plt_pulsatile = single_solve_plot(; model=model_pulsatile, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="pulsatile")
+#     plt_bump = single_solve_plot(; model=model_bump, db_idx=db_idx, phase=phase, freq=freq, amplitude=amplitude, T_init=T_init, ΔT=ΔT, type="bump")
+#     plot(plt_pulsatile, plt_bump, layout=(2, 1))
+# end
 
-single_solve_plot_pulsatile_bump()
+# single_solve_plot_pulsatile_bump()
 
 
-#! Have to set T_init to 0.01 to avoid the discontinuity
-for ΔT ∈ 0.01:10:1000
-    plt = single_solve_plot_pulsatile_bump(ΔT=ΔT, T_init=0.01)
-    display(plt)
-end
+# #! Have to set T_init to 0.01 to avoid the discontinuity
+# for ΔT ∈ 0.01:10:1000
+#     plt = single_solve_plot_pulsatile_bump(ΔT=ΔT, T_init=0.01)
+#     display(plt)
+# end
 
 
 
@@ -148,8 +149,9 @@ end
 
 
 ## * Exmaple 1 ======= Dll4 vs Dll1 for gene id:49 ====
+    #! this gene displayed that the Dll1 signal can flip the histone state later then the first pulse comparing with Dll4 case.
 single_gene_id = 49
-id2_freq = 0.15
+id2_freq = 0.1535
 amplitude1 = 62
 amplitude2 = 62
 T_init = 1e-10
@@ -181,6 +183,7 @@ plt_2genes_compare_id_49
 
 
 ## * Example 2 ======= Dll4 vs Dll1 for gene id:592 ====
+    #! this gene does not appear that activation time ST is different between Dll4 and Dll1. The activation is happened at the end of the first pulse
 single_gene_id = 592
 id2_freq = 0.09
 amplitude1 = amplitude2 = 134
@@ -205,6 +208,7 @@ plt_2genes_compare_id_592
 # savefig(plt_gene2_Dll1, savepath * "plt_gene2_Dll1.png")
 
 ## * Example 3 ======= Dll4 vs Dll1 for gene id:592 vs gene id:49 ========  
+    #! this gene does not appear that activation time ST is different between Dll4 and Dll1. The activation is happened within the first pulse
 gene_id_1 = 592
 gene_id_2 = 49
 id2_freq = 0.09
@@ -255,7 +259,7 @@ plt_Dll1
 # savefig(plt_Dll1, "./figures/Dll1_signal_freq_1.4.png")
 
 ## =================================================================
-#! case with multiple pulses 
+#! --------------- case with multiple pulses -------------
 T_init = 1e-10
 # ======= pulsatile model
 model = model_pulsatile
@@ -330,15 +334,15 @@ df = CSV.read(filename, DataFrame)
 ## ===========================================================================================
 
 ## ==== the relationship between driving frequency and switching time group by amplitude =========
-plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=[], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3])) # show only 3 representative amplitudes
+plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=[], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3])) # show only 3 
+#! =================== 6 representative amplitudes  ST - ω plots ------- Paper figure 6 (b) ==========================
 pyplot()
-# pythonplot()
 plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=collect(50:50:300), figure_save_path=figure_save_path)
 
 ## ===========================================================================================
 
 
-## ==== the relationship between driving amplitude and driving frequency  ========
+## ! ==== the relationship between driving amplitude and driving frequency A -ω , Paper figure 6 (a)========
 # ---- first trim the database with each frequency and its associated minimum amplutide
 df_min_amp = extract_min_amp(df)
 # ---- plot the driving frequency vs driving minimum amplitude 🔴 Figure 6(a) -------
@@ -369,8 +373,9 @@ function generate_database(; idx_range=nothing, amplitude_range=0:1:300, freq_ra
             freq_range=freq_range,
             prc2_range=prc2_range,
             ΔT=ΔT)
-
-        CSV.write(df_save_path * "freq :$freq_range" * "_|_" * "amplitude :$amplitude_range.csv", df)
+        savefile_name = df_save_path * "freq :$freq_range" * "_|_" * "amplitude :$amplitude_range.csv"
+        println("Saving dataframe to $savefile_name")
+        CSV.write(savefile_name, df)
     end
 end
 
@@ -460,7 +465,7 @@ df_592 = A_ω_st_relation_prc2_range(; model=model_pulsatile,
 
 
 
-##! ======= new Figure 6 A-w curve shifted by prc2 ? ===== =====
+##! ======================= Figure 7 A-w curve controled by prc2 rate ========================
 db_idx = 592
 amplitude_range = 0:1:500
 freq_range = 0:0.05:1
@@ -471,8 +476,8 @@ df_592_3d = A_ω_st_relation_prc2_range(; model=model_pulsatile,
     prc2_range=0.1:0.1:1,
     ΔT=100)
 
-CSV.write("df_592_3d.csv", df_592_3d)
-
+# CSV.write("df_592_3d.csv", df_592_3d)
+df_592_3d = CSV.read("df_592_3d.csv", DataFrame) # ! this is the dataframe for paper figure 7, can directly load it.
 function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol;kwargs...)
     pyplot()
     # group by prc2 column
@@ -501,11 +506,7 @@ savefig(A_w_prc2_curve, "A_w_prc2_curve_id_592.png")
 df_592_3d
 
 # ===== added plotting function for 3d scatter plot for A-ω-stime groupby prc2 relation ======
-# Plot 3D scatter plot of A-ω-ST relation grouped by PRC2 rate
-# Plots a 3D scatter plot of amplitude, frequency and switching time data
-# with points grouped and colored by PRC2 rate. Takes a DataFrame with columns
-# for amplitude, frequency, switching time and PRC2 rate. Groups data by PRC2 
-# rate and plots each group on the same 3D plot with different colors.
+# === New figure 🔴 ====
 function plot_all_prc2_3d(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol, z_col::Symbol; kwargs...)
     # group by prc2 column
     grouped_df = groupby(df, prc2_col)
@@ -525,62 +526,70 @@ end
 plt_3d_prc2 = plot_all_prc2_3d(df_592_3d,
                  :prc2, :amp, :freq, :stime;
                 m=1.5, guidefontsize=7, alpha = 0.6,
-                legendtitle = " PRC2 rates")
+                legendtitle = " PRC2 rates",legend = :outerright)
 savefig(plt_3d_prc2, "figures/df_592_3d_by_prc2.html")
 
 
-## ====== Generate the dataframe for the A ω st prc2 relation for a multi gene. ==========
+
+## 🔴 ====== Generate the dataframe for the A ω st prc2 relation for a multi gene. ==========
 df_49_592 = A_ω_st_prc2_multi_genes(gene_set_id=[49, 592],
     model=model_pulsatile,
-    amplitude_range=0:50:300,
-    freq_range=0:0.1:1,
-    prc2_range=0:0.1:1,
+    amplitude_range=50:50:300,
+    freq_range=0:0.05:1,
+    prc2_range=0:0.05:1,
     ΔT=100)
+CSV.write("df_49_592.csv",df_49_592)
 ## ===========================================================================================
 
 
 
 
-
-
-
-
 # show amplitude denpendent ST- ω relation for two genes.
+#! this function not used in paper
 function plot_ST_ω_by_amplitude_multi_genes(; data, layout=(3, 2), size=(1200, 800), legendfontsize=8, legendtitlefontsize=8, display_plt=false, prc2=0.3)
     fig_set = []
     for amplitude in unique(data.amp)
         fixed_A_2genes = filter(row -> row.amp == amplitude, data)
         fixed_A_prc2_2genes = filter(row -> row.prc2 == prc2, fixed_A_2genes)
-        plt = @df fixed_A_prc2_2genes plot(
-            :freq,
-            :stime,
-            group=:gene_id,
-            palette=:tab10,
-            m=(0.8, 1.5),
-            # legend_title="Amplitude",
-            legend_position=:outertopright,
-            legendfontsize=legendfontsize,
-            legendtitlefontsize=legendtitlefontsize,
-            ylabel="Switching Time",
-            xlabel="Switching Frequency",
-            dpi=500,
-            legend_title="Amplitude = $amplitude, \n PRC2  = $prc2"
-        )
-        push!(fig_set, plt)
+        if !isempty(fixed_A_prc2_2genes)
+            plt = @df fixed_A_prc2_2genes plot(
+                :freq,
+                :stime,
+                group=:gene_id,
+                palette=:tab10,
+                m=(0.8, 1.5),
+                # legend_title="Amplitude",
+                legend_position=:outertopright,
+                legendfontsize=legendfontsize,
+                legendtitlefontsize=legendtitlefontsize,
+                ylabel="Switching Time",
+                xlabel="Switching Frequency",
+                dpi=500,
+                legend_title="Amplitude = $amplitude, \n PRC2  = $prc2"
+            )
+            push!(fig_set, plt)
+        end
     end
     plt = plot(fig_set..., layout=layout, size=size)
-    if display_plt == true
+    if display_plt
         display(plt)
     end
-    # display(plt) 
+
     return fig_set, plt
 end
 
-plot_ST_ω_by_amplitude(data=df_49_592)
+# plot_ST_ω_by_amplitude(data=df_49_592)
+fig_set, plt = plot_ST_ω_by_amplitude_multi_genes(data=df_49_592)
+plt
 
 
 
-function plot_freq_stime(df::DataFrame, selected_prc2::Vector{Float64}=Float64[]; figsize=(800, 600))
+
+
+
+
+#! ================== The following figure is not used in paper yet, ST-ω curves with different A by different PRC2 values. ==========
+function plot_freq_stime(df::DataFrame; selected_prc2::Vector{Float64}=Float64[], figsize=(800, 600))
     unique_prc2 = isempty(selected_prc2) ? unique(df.prc2) : selected_prc2
     unique_amp = unique(df.amp)
     unique_gene_id = unique(df.gene_id)
@@ -588,160 +597,34 @@ function plot_freq_stime(df::DataFrame, selected_prc2::Vector{Float64}=Float64[]
     layout = (ceil(Int, sqrt(n_prc2)), floor(Int, sqrt(n_prc2)))
     layout = layout[1] * layout[2] < n_prc2 ? (layout[1], layout[2] + 1) : layout
     plots = []
-    marker_shapes = [:circle, :cross, :rect, :diamond, :hexagon, :star, :pentagon, :dtriangle, :utriangle]
+    gene_id_to_marker_shape = Dict(unique_gene_id[1] => :circle, unique_gene_id[2] => :cross)
 
     for prc2 in unique_prc2
         p = plot(xlabel="Frequency", ylabel="Switching Time", title="PRC2 = $prc2", legend=:topleft)
 
-        for (idx, gene_id) in enumerate(unique_gene_id)
-            marker_shape = marker_shapes[idx%length(marker_shapes)+1]
+        for gene_id in unique_gene_id
+            marker_shape = gene_id_to_marker_shape[gene_id]
 
             for amp in unique_amp
                 sub_df = df[(df.prc2.==prc2).&(df.gene_id.==gene_id).&(df.amp.==amp), :]
-                plot!(p, sub_df.freq, sub_df.stime, label="Amplitude = $amp, Gene ID = $gene_id", markershape=marker_shape, seriestype=:scatter)
+                plot!(p, sub_df.freq, sub_df.stime, label="A = $amp", markershape=marker_shape, seriestype=:line, legend=:outertopright)
             end
         end
 
         push!(plots, p)
     end
 
-    plot(plots..., layout=layout, size=figsize)
+    return plot(plots..., layout=layout, size=figsize)
 end
 
-
-plot_freq_stime(df_49_592, selected_prc2=[0.3])
-
+plot_freq_stime(df_49_592, selected_prc2=[0.2, 0.4, 0.6, 0.8], figsize=(1200, 800))
 
 
 
 
 
-
-
-
-
-
-
-## now test for how prc2 changes will affect 2 genes ST_ω relation in a amplitude denpendent manner
-# ---- generate dataframe for 2 genes (49, 592) as prc2 rate increases ------
-function Gen_df_stack_prc2_increase(; model=model, amplitude_range=0:50:300, freq_range=0:0.01:2, gene_set_id=[49, 592], phase_sample_size=10, prc2_range=0:0.1:1, mute_parameter_disp=true)
-    df_stack_prc2_set = []
-    @showprogress for prc2 in prc2_range
-        df_stack_prc2_i = A_ω_ϕ_st_relation_multi_gene(amplitude_range=amplitude_range, freq_range=freq_range, gene_set_id=gene_set_id, phase_sample_size=phase_sample_size, prc2=prc2, mute_parameter_disp=mute_parameter_disp)
-        if isempty(df_stack_prc2_i)
-            println("No data for prc2 = ", prc2)
-            continue
-        else
-            df_stack_prc2_i[!, :prc2] .= prc2
-            @show df_stack_prc2_i
-        end
-        push!(df_stack_prc2_set, df_stack_prc2_i)
-    end
-    return vcat(df_stack_prc2_set...)
-end
-
-
-
-# ======= generate data for two genes with various prc2=======
-df_stack_prc2_set = Gen_df_stack_prc2_increase(; model=model_pulsatile, amplitude_range=400, freq_range=0:0.1:2, gene_set_id=[49, 592], phase_sample_size=15, prc2_range=0.3:0.001:0.4, mute_parameter_disp=true)
-CSV.write("df_stack_prc2_set_amplitude_range=400, freq_range=0:0.1:2, gene_set_id=[49, 592], phase_sample_size=15, prc2_range=0.3:0.001:0.4.csv", df_stack_prc2_set)
-df_stack_prc2_set = CSV.File("old/data/df_stack_prc2_set_amplitude_range=300, freq_range=0:0.1:2, gene_set_id=[49, 592], phase_sample_size=15, prc2_range=0.3:0.001:0.4.csv") |> DataFrame
-show(df_stack_prc2_set, allrows=true)
-unique(df_stack_prc2_set.gene_id)
-df_stack_prc2_set_new_gene_name = df_stack_prc2_set
-# filter!(row -> row.amp == 300, df_stack_prc2_set_new_gene_name)
-
-# generate a more detailed data for finner prc2 values.
-# df_stack_prc2_finner_set = Gen_df_stack_prc2_increase(; amplitude_range=50:50:300, freq_range=0:0.05:2, gene_set_id=[49, 592], phase_sample_size=15, prc2_range=0.3:0.1:0.6, mute_parameter_disp=true)
-# df_stack_prc2_finner_set
-# CSV.write("df_stack_prc2_finner_set_amplitude_range=50:50:300, freq_range=0:0.05:2, gene_set_id=[49, 592], phase_sample_size=15, prc2_range=0.3:0.01:0.6.csv", df_stack_prc2_finner_set)
-
-
-# =============== save and laod thie dataframe to a .csv file
-using CSV
-# CSV.write("df_stack_prc2_set_amplitude_range=0:50:400, freq_range=0:0.01:2, gene_set_id=[49, 592], phase_sample_size=10, prc2_range=0:0.1:1.csv", df_stack_prc2_set)
-df_stack_prc2_set = CSV.File("old/data/df_stack_prc2_set_amplitude_range=0:50:400, freq_range=0:0.01:2, gene_set_id=[49, 592], phase_sample_size=10, prc2_range=0:0.1:1.csv") |> DataFrame
-
-# ============ the loaded dataframe has gene_id with 49 and 592, I just want to map this column to "gene_1" and "gene_2"
-df_stack_prc2_set_new_gene_name = df_stack_prc2_set
-idx_gne_dict = Dict(49 => "Gene 1", 592 => "Gene 2")
-df_stack_prc2_set_new_gene_name = transform(df_stack_prc2_set_new_gene_name, :gene_id => ByRow(x -> idx_gne_dict[x]) => :gene_id)
-unique(df_stack_prc2_set_new_gene_name.gene_id)
-gdf_stack_prc2 = groupby(df_stack_prc2_set_new_gene_name, :prc2)
-
-plot_ST_ω_by_amplitude(; data=gdf_stack_prc2[3], layout=(3, 3), size=(2200, 1600), display_plt=true)
-
-
-
-
-# ----compare ST ω relation only at fixed amplitude
-# check prc2 values 
-function select_df_prc2_fixed_amp(; data=gdf_stack_prc2, prc2_key=3, amp_select=300)
-    df_prc2 = data[keys(data)[prc2_key]]
-    df_prc2_fixed_amp = filter(row -> row.amp == amp_select, df_prc2)
-    println("returning prc2 = ", keys(data)[prc2_key], " and amp = ", amp_select)
-    return df_prc2_fixed_amp
-end
-
-
-
-
-
-keys(gdf_stack_prc2)[9]
-fixed_amp = 300
-df_stack_prc2_fixed_amp = select_df_prc2_fixed_amp(prc2_key=3, amp_select=fixed_amp)
-fig_set, plt = plot_ST_ω_by_amplitude(data=df_stack_prc2_fixed_amp, layout=(1, 1), size=(900, 600))
-plt
-
-
-## ====== fixed amplitude  change prc2 for two genes =================
-plt_set = []
-fixed_amp = 300
-for prc2_idx in 1:length(keys(gdf_stack_prc2))
-    @show prc2_idx
-    df_stack_prc2_fixed_amp = select_df_prc2_fixed_amp(prc2_key=prc2_idx, amp_select=fixed_amp)
-    fig_set, plt = plot_ST_ω_by_amplitude(data=df_stack_prc2_fixed_amp,
-        layout=(1, 1), size=(900, 600),
-        legendfontsize=5, legendtitlefontsize=5,
-        display_plt=false, prc2=keys(gdf_stack_prc2)[prc2_idx][1])
-    # title!(plt, "PRC2 = $(keys(gdf_stack_prc2)[prc2_idx][1])", titlefont=font(8))
-    xlims!(plt, (0, 2))
-    ylims!(plt, (100, 150))
-    push!(plt_set, plt)
-end
-
-plt_ST_ω_2gene_prc2_increase_fixed_amp = plot(plt_set[1:4]..., layout=(2, 2), size=(1600, 1000), legendfontsize=12, legendtitlefontsize=12, m=(3, 0.6), legend=:topright)
-# savefig(plt_ST_ω_2gene_prc2_increase_fixed_amp, "plt_ST_ω_2gene_prc2_increase_fixed_amp.png")
-
-
-
-
-# ========== make an animation for prc2 0.3 ~ 0.4 at amp = 300 for two genes (49,592) ==================
-plt_set = []
-fixed_amp = 300
-anim_prc2 = @animate for prc2_idx in 1:length(keys(gdf_stack_prc2))
-    @show prc2_idx
-    df_stack_prc2_fixed_amp = select_df_prc2_fixed_amp(prc2_key=prc2_idx, amp_select=fixed_amp)
-    fig_set, plt = plot_ST_ω_by_amplitude(data=df_stack_prc2_fixed_amp,
-        layout=(1, 1), size=(900, 600),
-        legendfontsize=5, legendtitlefontsize=5,
-        display_plt=false, prc2=keys(gdf_stack_prc2)[prc2_idx][1])
-    # title!(plt, "PRC2 = $(keys(gdf_stack_prc2)[prc2_idx][1])", titlefont=font(8))
-    xlims!(plt, (0, 2))
-    ylims!(plt, (100, 200))
-    push!(plt_set, plt)
-end
-
-gif(anim_prc2, "prc2_0.3~0.4_amp_200_id(49,592).gif", fps=15)
-
-
-fixed_amp = 200
-gene2_sustained_df = filter(row -> row.freq == 0 && row.gene_id == "Gene 2", df_stack_prc2_set_new_gene_name)
-gene1_pusatile_df = filter(row -> row.freq == 0.9 && row.gene_id == "Gene 1", df_stack_prc2_set_new_gene_name)
-
-
-
-## ==== #!
+# ******************⬇ Used section for multi genes ⬇ ********************
+## ==== #! ============== Figure 9 , 6 plots for amplitude-dependent ST_ω relation for 2 genes ==============
 df_49_592# ! new dataframe
 fixed_amp = 100
 gene2_Dll4_df = filter(row -> row.freq == 0.1 && row.amp == fixed_amp && row.gene_id == 592, df_49_592)
@@ -780,26 +663,18 @@ plt2 = @df gene2_Dll4_df plot!(plt1, :prc2, :stime,
 
 
 
-## ========= To generate a plot of ω vs. ST for a range of PRC2 rate and a range of amplitude ==========
-# ------- generate dataset
-# df_stack_prc2_set_gene_49 = Gen_df_stack_prc2_increase(; model=model_pulsatile, amplitude_range=100:200:300, freq_range=0:0.1:2, gene_set_id=[49], phase_sample_size=15, prc2_range=0.1:0.05:0.6, mute_parameter_disp=true)
-df_stack_prc2_set_gene_49 = Gen_df_stack_prc2_increase(; model=model_pulsatile, amplitude_range=100:200:300, freq_range=0:0.1:2, gene_set_id=[49], phase_sample_size=5, prc2_range=0.41, mute_parameter_disp=true)
-# CSV.write("df_stack_prc2_set_gene_49.csv", df_stack_prc2_set_gene_49)
-
 
 ## ------- plot ω vs. ST for various prc2 with amplitude  = 300
 df_49_592 #! new df
 df_49 = filter(row -> row.gene_id == 49, df_49_592)
-df_49_fixed_amp = filter(row -> row.amp == 200, df_49)
-# df_stack_prc2_set_gene_49_fixed_amp = filter(row -> row.amp == 300, df_stack_prc2_set_gene_49)
-# df_stack_prc2_set_gene_49_fixed_amp
+df_49_fixed_amp = filter(row -> row.amp == 300, df_49)
+
 plt_id49_amp_200_prc2_set = @df df_49_fixed_amp plot(
     :freq,
     :stime,
     group=:prc2,
-    palette=:RdBu_9,
+    palette=palette(:inferno,22),  # Changed to a more diverse palette to highlight middle range values more distinctly
     m=(1, 2.5),
-    # legend_title="Amplitude",
     legend_position=:outertopright,
     legendfontsize=5,
     legendtitlefontsize=5,
@@ -815,7 +690,7 @@ savefig(plt_id49_amp_200_prc2_set, "plt_id49_amp_200_prc2_set.png")
 
 ## ------- plot ω vs. ST for various prc2 with amplitude  = 100
 df_49 = filter(row -> row.gene_id == 49, df_49_592)
-df_49_fixed_amp = filter(row -> row.amp == 100, df_49)
+df_49_fixed_amp = filter(row -> row.amp == 300, df_49)
 plt_id49_amp_100_prc2_set = @df df_49_fixed_amp plot(
     :freq,
     :stime,
@@ -856,7 +731,8 @@ combined_df
 
 ## ================================================= Select two genes for comparision ===========================================
 df_2genes = filter_by_gene_id(combined_df, rand(40:60, 2))
-# df_2genes = filter_by_gene_id(combined_df, [6, 8])# !working example 
+df_2genes = filter_by_gene_id(combined_df, [6, 8])# !working example 
+df_2genes = filter_by_gene_id(combined_df, [43, 52])# !working example 
 #! working cases: [ 43, 52]
 # [ 48, 55] : A = 50 cross, A = 300, no cross
 # =================================================================================
@@ -879,3 +755,75 @@ fixed_amp_set = df_2genes.amp |> unique
 plot_Dll1vs_Dll4_prc2_ST_by_amplitude(; df_2genes=df_2genes, fixed_amp_set=fixed_amp_set, freq_selection=[0.5, 0], layout=(3, 2), size=(1000, 800), fontsize=font(8), save=true, filename="Dll1vs_Dll4_prc2_ST_by_amplitude_6amplitudes")
 ## ==================================================================
 
+# ******************⬆ Used section for multi genes ⬆ ********************
+
+##  plot the dynamics plot of gene id 43 with amplitude 300 and frequency 0.5
+T_init = 1e-10
+# ======= pulsatile model
+model = model_pulsatile
+signal_type = "pulsatile"
+
+# !before the critial prc2 rate which is  around 0.35
+plt_Dll1_gene1 = single_solve_plot(; model=model, db_idx=49, phase=0, freq=0.5, prc2=0.2, amplitude=300.0, T_init=T_init, ΔT=20, type=signal_type, T_final=1.5 * ΔT)
+
+plt_Dll1_gene2 = single_solve_plot(; model=model, db_idx=52, phase=0, freq=0., prc2=0.2, amplitude=300.0, T_init=T_init, ΔT=20, type=signal_type, T_final=1.5 * ΔT)
+
+# !after the critial prc2 rate which is  around 0.35
+plt_Dll1_gene1_2 = single_solve_plot(; model=model, db_idx=49, phase=0, freq=0.5, prc2=0.5, amplitude=300.0, T_init=T_init, ΔT=20, type=signal_type, T_final=1.5 * ΔT)
+
+plt_Dll1_gene2_2 = single_solve_plot(; model=model, db_idx=52, phase=0, freq=0., prc2=0.5, amplitude=300.0, T_init=T_init, ΔT=20, type=signal_type, T_final=1.5 * ΔT)
+
+
+## =====
+## 🔴 ====== Generate the dataframe for the A ω st prc2 relation for a multi gene. ==========
+df_43_52 = A_ω_st_prc2_multi_genes(gene_set_id=[43, 52],
+    model=model_pulsatile,
+    amplitude_range=50:50:300,
+    freq_range=0:0.1:1,
+    prc2_range=0:0.05:1,
+    ΔT=100)
+CSV.write("df_49_592.csv", df_43_52)
+
+# --- filter gene 43, with amplitude 300, and frequency 0.5 and prc2 0.2
+gene1_ST_b = filter(row -> row.gene_id == 43 && row.amp == 300 && row.freq == 0.5 && row.prc2 == 0.2, df_43_52)
+
+# ----filter gene 52 with amplitude 300, and frequency 0 and prc2 0.2
+gene2_ST_b = filter(row -> row.gene_id == 52 && row.amp == 300 && row.freq == 0.0 && row.prc2 == 0.2, df_43_52)
+
+# ----filter gene 43 with amplitude 300, and frequency 0.5 and prc2 0.4
+gene1_ST_a = filter(row -> row.gene_id == 43 && row.amp == 300 && row.freq == 0.5 && row.prc2 == 0.4, df_43_52)
+
+# ----filter gene 52 with amplitude 300, and frequency 0 and prc2 0.4
+gene2_ST_a = filter(row -> row.gene_id == 52 && row.amp == 300 && row.freq == 0.0 && row.prc2 == 0.4, df_43_52)
+
+
+## ----------------
+gene_id_1 = 52
+gene_id_2 = 43
+id2_freq = 0.5
+amplitude1 = amplitude2 = 300
+T_init = 1e-10
+ΔT = 30
+prc2 = 0.2
+plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43 =
+    Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+        id1=gene_id_1, id2=gene_id_2,
+        id2_freq=id2_freq, amplitude1=amplitude1,
+        amplitude2=amplitude2, prc2=prc2,
+        T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true)
+plt_2genes_compare_id_52_43
+
+
+## ----
+prc2 = 0.4
+plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43_after =
+    Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+        id1=gene_id_1, id2=gene_id_2,
+        id2_freq=id2_freq, amplitude1=amplitude1,
+        amplitude2=amplitude2, prc2=prc2,
+        T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true)
+plt_2genes_compare_id_52_43_after

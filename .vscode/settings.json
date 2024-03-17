@@ -1,3 +1,4 @@
 {
-    "julia.executablePath": ""
+    "julia.executablePath": "",
+    "liveServer.settings.port": 5501
 }

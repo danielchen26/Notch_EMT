@@ -128,3 +128,55 @@ gene1_pusatile_df = filter(row -> row.freq == 0.9 && row.gene_id == "Gene 1", df
 df_stack_prc2_set_gene_49 = Gen_df_stack_prc2_increase(; model=model_pulsatile, amplitude_range=100:200:300, freq_range=0:0.1:2, gene_set_id=[49], phase_sample_size=5, prc2_range=0.41, mute_parameter_disp=true)
 # CSV.write("df_stack_prc2_set_gene_49.csv", df_stack_prc2_set_gene_49)
 
+
+
+# ## * ===## =============== A-w-ϕ curve if ϕ is not controllable================
+# switch_amplitude = []
+# switch_frequency = []
+# T_init = 1e-10
+# tspan = (0.0, 600.0)
+# ΔT = 100.0
+# @showprogress for freq in 0.0:0.1:1#exp10.(-4:0.05:1)
+#     for amplitude = 0:10:2000#15:0.1:20#14:0.01:18#10:0.05:30
+#         switch_set = []
+#         for phase = 0:2π
+#             # frequency modulation
+#             # p1 = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, freq, 0.0]
+#             # p = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, freq, 0.0, phase]
+#             # u0 = [6.0, 0.0, 6.0, 40.0, 500.0, 0.6876, 0.678, 500.0, 50.6344, 1.0, 2.0]
+#             # u0 = [6.59, 0.0, 6.59, 43.41, 61.47, 0.02, 0.54, 48.17, 49.43, 1.09, 1.09]
+#             # @show parameter_set[db_idx, :]
+#             # @show initial_condition[db_idx, :]
+
+#             p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
+#             pmap = parameters(model) .=> p
+#             u0 = collect(initial_condition[db_idx, :])
+#             u0map = species(model) .=> u0
+#             ts, cb = make_cb([T_init, T_init + ΔT], 13, amplitude)
+#             prob1 = ODEProblem(model, u0map, tspan, pmap)
+#             sol1 = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
+
+#             # plt1 = plot(sol1, vars = [5, 6, 9, 10], lw = 1.5, title = "Amp: $amplitude, Frequency: $freq")
+#             # display(plt1)
+
+#             check = check_switching(sol1, ts, tspan)
+#             append!(switch_set, check)
+#             # if check == -1 # if there exist a phase
+#             #     append!(switch_amplitude, amplitude)
+#             #     append!(switch_frequency, freq)
+#             #     # append!(switch_phase, phase)
+#             # end
+#             if check_switching(sol1, ts, tspan) == -1
+#                 break
+#             end
+#         end
+#         # @show switch_set
+#         if -1 in switch_set
+#             append!(switch_amplitude, amplitude)
+#             append!(switch_frequency, freq)
+#         end
+#         if -1 in switch_set
+#             break
+#         end
+#     end
+# end

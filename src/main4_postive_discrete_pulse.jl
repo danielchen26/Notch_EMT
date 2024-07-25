@@ -397,60 +397,6 @@ generate_database(idx_range=40:200,
 
 
 
-
-# ## * ===## =============== A-w-ϕ curve if ϕ is not controllable================
-# switch_amplitude = []
-# switch_frequency = []
-# T_init = 1e-10
-# tspan = (0.0, 600.0)
-# ΔT = 100.0
-# @showprogress for freq in 0.0:0.1:1#exp10.(-4:0.05:1)
-#     for amplitude = 0:10:2000#15:0.1:20#14:0.01:18#10:0.05:30
-#         switch_set = []
-#         for phase = 0:2π
-#             # frequency modulation
-#             # p1 = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, freq, 0.0]
-#             # p = [10.0, 1.0, 1.0, 0.2, 0.53, 1.8, 3.77, 19.08, 19.08, 1.0, 1.0, freq, 0.0, phase]
-#             # u0 = [6.0, 0.0, 6.0, 40.0, 500.0, 0.6876, 0.678, 500.0, 50.6344, 1.0, 2.0]
-#             # u0 = [6.59, 0.0, 6.59, 43.41, 61.47, 0.02, 0.54, 48.17, 49.43, 1.09, 1.09]
-#             # @show parameter_set[db_idx, :]
-#             # @show initial_condition[db_idx, :]
-
-#             p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
-#             pmap = parameters(model) .=> p
-#             u0 = collect(initial_condition[db_idx, :])
-#             u0map = species(model) .=> u0
-#             ts, cb = make_cb([T_init, T_init + ΔT], 13, amplitude)
-#             prob1 = ODEProblem(model, u0map, tspan, pmap)
-#             sol1 = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
-
-#             # plt1 = plot(sol1, vars = [5, 6, 9, 10], lw = 1.5, title = "Amp: $amplitude, Frequency: $freq")
-#             # display(plt1)
-
-#             check = check_switching(sol1, ts, tspan)
-#             append!(switch_set, check)
-#             # if check == -1 # if there exist a phase
-#             #     append!(switch_amplitude, amplitude)
-#             #     append!(switch_frequency, freq)
-#             #     # append!(switch_phase, phase)
-#             # end
-#             if check_switching(sol1, ts, tspan) == -1
-#                 break
-#             end
-#         end
-#         # @show switch_set
-#         if -1 in switch_set
-#             append!(switch_amplitude, amplitude)
-#             append!(switch_frequency, freq)
-#         end
-#         if -1 in switch_set
-#             break
-#         end
-#     end
-# end
-
-
-
 ## =========== Generate the dataframe for A ω st prc2_range relation for a single gene. =========
 db_idx = 592
 amplitude_range = 0:100:300
@@ -782,7 +728,10 @@ df_43_52 = A_ω_st_prc2_multi_genes(gene_set_id=[43, 52],
     freq_range=0:0.1:1,
     prc2_range=0:0.05:1,
     ΔT=100)
-CSV.write("df_49_592.csv", df_43_52)
+# CSV.write("df_43_52.csv", df_43_52)
+# !== load the above generated dataframe df_43_52 ========
+df_43_52 = CSV.read("df_43_52.csv", DataFrame)
+
 
 # --- filter gene 43, with amplitude 300, and frequency 0.5 and prc2 0.2
 gene1_ST_b = filter(row -> row.gene_id == 43 && row.amp == 300 && row.freq == 0.5 && row.prc2 == 0.2, df_43_52)
@@ -801,11 +750,11 @@ gene2_ST_a = filter(row -> row.gene_id == 52 && row.amp == 300 && row.freq == 0.
 gene_id_1 = 52
 gene_id_2 = 43
 id2_freq = 0.5
-amplitude1 = amplitude2 = 300
+amplitude1 = amplitude2 = 150
 T_init = 1e-10
 ΔT = 30
 prc2 = 0.2
-plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43 =
+plt_gene1_Dll4_before, plt_gene2_Dll1_before, plt_2genes_compare_id_52_43_before =
     Two_Genes_TS_by_Prc2(; model=model_pulsatile,
         id1=gene_id_1, id2=gene_id_2,
         id2_freq=id2_freq, amplitude1=amplitude1,
@@ -813,12 +762,11 @@ plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43 =
         T_init=T_init, ΔT=ΔT, title_on=true, legend_title_on=true,
         type="pulsatile",
         phase2_reset=true)
-plt_2genes_compare_id_52_43
-
-
+plt_2genes_compare_id_52_43_before
+savefig(plt_2genes_compare_id_52_43_before, "plt_2genes_compare_id_52_43_before.png")
 ## ----
 prc2 = 0.4
-plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43_after =
+plt_gene1_Dll4_after, plt_gene2_Dll1_after, plt_2genes_compare_id_52_43_after =
     Two_Genes_TS_by_Prc2(; model=model_pulsatile,
         id1=gene_id_1, id2=gene_id_2,
         id2_freq=id2_freq, amplitude1=amplitude1,
@@ -827,3 +775,47 @@ plt_gene1_Dll4, plt_gene2_Dll1, plt_2genes_compare_id_52_43_after =
         type="pulsatile",
         phase2_reset=true)
 plt_2genes_compare_id_52_43_after
+savefig(plt_2genes_compare_id_52_43_after, "plt_2genes_compare_id_52_43_after.png")
+
+
+
+## ---- twicking gene1 with freq = 0.5----- 
+prc2 = 0.2
+gene1_Dll4, gene1_Dll1, plt_test =
+    Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+        id1=gene_id_1, id2=gene_id_1,
+        id2_freq=0.5, amplitude1=amplitude1,
+        amplitude2=amplitude2, prc2=prc2,
+        T_init=T_init, ΔT=9, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true)
+plt_test
+plot(gene1_Dll1, legend_title="Gene 1")
+savefig(plt_test, "plt_2genes_compare_id_52_43_1stgene_freq_0.5.png")
+
+plt_gene1_Dll4_before, plt_gene2_Dll1_before, plt_2genes_compare_id_52_43_before =
+    Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+        id1=gene_id_1, id2=gene_id_2,
+        id2_freq=id2_freq, amplitude1=amplitude1,
+        amplitude2=amplitude2, prc2=prc2,
+        T_init=T_init, ΔT=9, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true)
+plt_2genes_compare_id_52_43_before
+twogenes_pulsatile = plot(plot(gene1_Dll1, legend_title="Gene 1"), plt_gene2_Dll1_before, layout=(2, 1))
+savefig(twogenes_pulsatile, "plt_2genes_compare_id_52_43_1stgene_freq_0.5.png")
+
+## --- twicking gene2 with freq = 0.1 -------
+prc2 = 0.4
+_,_, plt_test =
+    Two_Genes_TS_by_Prc2(; model=model_pulsatile,
+        id1=gene_id_1, id2=gene_id_2,
+        id2_freq=0.1, amplitude1=amplitude1,
+        amplitude2=amplitude2, prc2=prc2,
+        T_init=T_init, ΔT=9, title_on=true, legend_title_on=true,
+        type="pulsatile",
+        phase2_reset=true)
+plt_test
+savefig(plt_test, "plt_2genes_compare_id_52_43_2ndgene_freq_0.1.png")
+## ---
+

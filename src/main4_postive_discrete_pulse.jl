@@ -424,24 +424,42 @@ df_592_3d = A_ω_st_relation_prc2_range(; model=model_pulsatile,
 
 # CSV.write("df_592_3d.csv", df_592_3d)
 df_592_3d = CSV.read("df_592_3d.csv", DataFrame) # ! this is the dataframe for paper figure 7, can directly load it.
-function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol;kwargs...)
+function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol; kwargs...)
+    # Use gr() backend instead of pyplot() since it's more stable
     pyplot()
+    
     # group by prc2 column
     grouped_df = groupby(df, prc2_col)
+    n_groups = length(grouped_df)
+    
+    # Create a color palette that transitions from cool to warm colors
+    colors = cgrad(:viridis, n_groups, categorical=true)
+    
     # create plot object
     plt = plot(xlabel="Driving Amplitude (A)",
-        ylabel=L"Driving Frequency ($\omega$)", dpi=500; kwargs...)
-    # loop through each group and plot on same plot with different colors
-    for group in grouped_df
-        # extract data for group
+        ylabel=L"Driving Frequency ($\omega$)", 
+        dpi=500,
+        legend=:topright,
+        legendtitle="PRC2 Rate",
+        legendfontsize=8,
+        grid=false; kwargs...)
+    
+    # loop through each group and plot on same plot
+    for (i, group) in enumerate(grouped_df)
         each_group = DataFrame(group)
-        # extract minimum amplitude for group
         min_amp_df = extract_min_amp(each_group)
-        # plot minimum amplitude vs frequency
-        plot!(plt, min_amp_df[!, x_col], min_amp_df[!, y_col], seriestype=:scatter, label="Prc2 rate : " * string(each_group[1, prc2_col]))
-        # add boundary event to plot
-        add_Boundary_event(each_group[!, x_col], each_group[!, y_col], plt)
+        
+        # Plot only the line (no scatter points)
+        plot!(plt, 
+            min_amp_df[!, x_col], 
+            min_amp_df[!, y_col], 
+            linewidth=2,
+            color=colors[i],
+            label=string(round(each_group[1, prc2_col], digits=1)),
+            legend_title="PRC2 Rate"
+        )
     end
+    
     return plt
 end
 

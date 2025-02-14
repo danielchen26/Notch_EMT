@@ -165,17 +165,16 @@ end
 
 function add_Boundary_event(switch_amplitude, switch_frequency, plt)
     df = DataFrame(switch_amplitude=switch_amplitude, switch_frequency=switch_frequency)
-    # CSV.write("switching_freq_amplitude.csv",df)
-
     gp = groupby(df, :switch_frequency)
     boundary_amplitude = []
     for i in gp
         append!(boundary_amplitude, minimum(i.switch_amplitude))
     end
-
     critical_freq = [keys(gp)[i].switch_frequency for i = 1:gp.ngroups]
-    boundary_amplitude
-    plt_boundary = plot!(plt, boundary_amplitude, critical_freq, label="Switching Boundary", lw=3)
+    plot!(plt, boundary_amplitude, critical_freq, 
+        label="Switching Boundary", 
+        linewidth=3,
+        color=:red)
 end
 
 # save A-w data
@@ -654,6 +653,7 @@ end
 
 
 
+
 """
 Input:
 1. Amplitude range
@@ -826,31 +826,23 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
     elseif isempty(amplitude_select) == true
         df_amp_select = df
     end
+    
     plt = @df df_amp_select plot(
         :freq,
         :stime,
         group=:amp,
         palette=palette,
-        # palette = Symbol("RdYlBu_"*"$color_catg"),
-        m=(2, 4),
         lw=3,
         legend_title="Amplitude",
-        # legend_position=:topright,
         legend_position=:topleft,
-        # foreground_color_legend=nothing,
-        # fg_legend = :false,
-        # frameon=false,
-        # xlabel = "Switching Amplitude",
-        # ylabel = "Switching Frequency"
+        markershape=:none,  # This removes the dots while keeping everything else the same
         dpi=500,
-        # title = "Amplitude = 100"
-        # bg = RGB(0.2, 0.2, 0.5),
         arg...
     )
 
     xlabel!(plt, L"Driving Frequency ($\omega$)")
-    # xlabel!(plt, L"Driving Frequency $(L"\omega")")
     ylabel!(plt, "Switching Time (ST)")
+    
     if figure_save_path != nothing
         savefig(plt, figure_save_path * "ω_vs_ST" * ".png")
     end

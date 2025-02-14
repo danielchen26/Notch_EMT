@@ -346,10 +346,16 @@ plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=collect(50:50:30
 # ---- first trim the database with each frequency and its associated minimum amplutide
 df_min_amp = extract_min_amp(df)
 # ---- plot the driving frequency vs driving minimum amplitude 🔴 Figure 6(a) -------
-min_amp_vs_freq_plt = plot(df_min_amp.amp, df_min_amp.freq, seriestype=:scatter, #yaxis=:log10,
-    label="Switching Event",
-    xlabel="Driving Amplitude", ylabel="Driving Frequency", dpi=500)
-add_Boundary_event(df.amp, df.freq, min_amp_vs_freq_plt)
+pyplot()
+min_amp_vs_freq_plt = plot(df_min_amp.amp, df_min_amp.freq, 
+    seriestype=:line,  
+    linewidth=3,
+    color=:red,
+    legend=:topleft,
+    label="Switching Boundary",
+    xlabel=L"Driving Amplitude ($A$)", 
+    ylabel=L"Driving Frequency ($\omega$)", 
+    dpi=500)
 savefig(min_amp_vs_freq_plt, figure_save_path * "freq_vs_amp.png")
 ## ===========================================================================================
 

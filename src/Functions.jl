@@ -221,8 +221,8 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
     @show t_switching
     if title == "on"
         plt = plot(sol,
-            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            # vars = [1,2,3,4,5,6,7,8,9,10,11], # all variables
+            idxs=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            # idxs = [1,2,3,4,5,6,7,8,9,10,11], # all variables
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -234,7 +234,7 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
             titlefont=font(10, "Arial"))
     elseif title == "off"
         plt = plot(sol,
-            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -368,7 +368,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
 
     if title_on == true && legend_title_on == true
         plt_gene1_Dll4 = plot(sol_gene1,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -381,7 +381,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == true
         plt_gene1_Dll4 = plot(sol_gene1,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -391,7 +391,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             dpi=500)
     elseif title_on == true && legend_title_on == false
         plt_gene1_Dll4 = plot(sol_gene1,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -404,7 +404,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == false
         plt_gene1_Dll4 = plot(sol_gene1,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -433,7 +433,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
     tt = ts2[1]:0.01:ts2[2]
     if title_on == true && legend_title_on == true
         plt_gene2_Dll1 = plot(sol_gene2,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -446,7 +446,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == true
         plt_gene2_Dll1 = plot(sol_gene2,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -456,7 +456,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             dpi=500)
     elseif title_on == true && legend_title_on == false
         plt_gene2_Dll1 = plot(sol_gene2,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -469,7 +469,7 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             titlefont=font(10, "Arial"))
     elseif title_on == false && legend_title_on == false
         plt_gene2_Dll1 = plot(sol_gene2,
-            vars=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=vars_to_show, # [MR,KDM5A,H4,H27,KDM6A]
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -757,7 +757,7 @@ function anim_prc2_changing(range; model=model, u0=u0, tspan=tspan, p=p, cb=cb, 
         prob = remake_prob(model, u0, tspan, p; prc2=prc2)
         @time sol = solve(prob, Rosenbrock23(), callback=cb, tstops=ts)
         plt = plot(sol,
-            vars=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
             lw=1.5,
             xlabel="Time", ylabel="Concentration",
             title="PRC2 rate : $prc2",
@@ -774,7 +774,7 @@ end
 """
 function Plot_C(sol)
     plt = plot(sol=sol,
-        vars=[[4, 5, 6, 9]], # [MR,KDM5A,H4,H27,KDM6A]
+        idxs=[[4, 5, 6, 9]], # [MR,KDM5A,H4,H27,KDM6A]
         lw=1.5,
         xlabel="Time", ylabel="Concentration",
         # title = title,
@@ -803,7 +803,7 @@ function anim_freq_tswitch(; range=0:0.01:0.4, amplitude=500, db_idx=301)
             push!(t_switching_set, t_switching)
             plot(single_sol,
                 # vars = [4, 5, 6, 9], # [MR,KDM5A,H4,H27]
-                vars=[6, 9], # [H4,H27]
+                idxs=[6, 9], # [H4,H27]
                 lw=2,
                 xlabel="Time", ylabel="Concentration",
                 foreground_color_legend=nothing,
@@ -1131,4 +1131,46 @@ function plot_Dll1vs_Dll4_prc2_ST_by_amplitude(; df_2genes=df_2genes, fixed_amp_
     elseif save == true && !isnothing(filename)
         savefig(Dll1vs_Dll4_prc2_ST_by_amplitude_id, filename*".png")
     end
+end
+
+# Function definition copied from main4_postive_discrete_pulse.jl for Figure 5
+function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol; kwargs...)
+    # Use gr() backend instead of pyplot() since it's more stable - Note: We changed Notch_EMT_paper to use pyplot consistently, so this might need adjustment if issues arise.
+    pyplot()
+    
+    # group by prc2 column
+    grouped_df = groupby(df, prc2_col)
+    n_groups = length(grouped_df)
+    
+    # Create a color palette that transitions from cool to warm colors
+    # Using :viridis as an example, adjust as needed
+    colors = cgrad(:viridis, n_groups, categorical=true)
+    
+    # create plot object
+    # Default settings, can be overridden by kwargs
+    plt = plot(xlabel="Driving Amplitude (A)",
+        ylabel=L"Driving Frequency ($\omega$)", 
+        dpi=500,
+        legend=:topright,
+        legendtitle="PRC2 Rate",
+        legendfontsize=8,
+        grid=false; kwargs...)
+    
+    # loop through each group and plot on same plot
+    for (i, group) in enumerate(grouped_df)
+        each_group = DataFrame(group)
+        min_amp_df = extract_min_amp(each_group)
+        
+        # Plot only the line (no scatter points)
+        plot!(plt, 
+            min_amp_df[!, x_col], 
+            min_amp_df[!, y_col], 
+            linewidth=2,
+            color=colors[i],
+            label=string(round(each_group[1, prc2_col], digits=1))
+            # Removed redundant legend_title inside loop
+        )
+    end
+    
+    return plt
 end

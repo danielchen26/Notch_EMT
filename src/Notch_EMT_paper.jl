@@ -68,62 +68,81 @@ function generate_figure3()
     
     # --- Panel A: Sustained Input --- 
     # Simulate with frequency = 0.0 (sustained signal)
-    plt_Dll4 = single_solve_plot(; 
+    # Call single_solve directly to get the solution object
+    _, _, _, _, ts_a, _, sol_a, _ = single_solve(; 
         model=model_pulsatile, 
         db_idx=db_idx, 
+        freq=0.0, 
         phase=0, 
-        freq=0.0,        # Key parameter for sustained input
-        prc2=prc2,
         amplitude=amplitude, 
         T_init=T_init, 
         ΔT=ΔT, 
-        type="sustained", # Specifies signal type for plotting
-        T_final=T_final
+        tspan=(0.0, T_init + T_final), # Define tspan here
+        prc2=prc2
     )
-    
-    # Customize Panel A plot appearance
-    plot!(plt_Dll4,
-        title="A=50.0, freq=0.0, ST=10.3", # Title includes key parameters/results
-        xlabel="Time",
+
+    # Create Panel A plot DIRECTLY with ONLY desired indices and styling
+    plt_Dll4 = plot(sol_a,
+        title="A=50.0, freq=0.0, ST=10.3", 
+        xlabel=L"Time ($t$)", 
         ylabel="Concentration",
-        idxs=[1, 6, 9], # Select specific species indices to plot (MR, H4, H27)
-        labels=["MR(t)" "H4(t)" "H27(t)"], # Labels for selected species
-        legendfontsize=10,
-        guidefontsize=14,
-        tickfontsize=12,
+        idxs=[4, 6, 9], # Ensure ONLY MR(4), H4(6), H27(9) are plotted
+        labels=["MR(t)" "H4(t)" "H27(t)"], 
+        legendfontsize=14, 
+        guidefontsize=18,  
+        tickfontsize=14,   
+        titlefontsize=18,  
+        legend_framestyle=:none, 
         linewidth=2
     )
+    # Add the input signal plot layer
+    plot!(plt_Dll4, [0, ts_a[1], ts_a[2], T_init + T_final], [0, 0, 2 * amplitude, 0], 
+        label="Sustained Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
+        fill=(0, 0.3, :blue), color="black", dpi=300
+    )
+
     # Save Panel A individually
     savefig(plt_Dll4, joinpath(figure_path, "figure3_panelA_sustained.png"))
     println("Figure 3 Panel A saved.")
 
     # --- Panel B: Pulsatile Input --- 
     # Simulate with a specific frequency (0.43)
-    plt_Dll1 = single_solve_plot(; 
+    # Call single_solve directly
+     _, _, _, _, ts_b, _, sol_b, phase_b = single_solve(; 
         model=model_pulsatile, 
         db_idx=db_idx, 
+        freq=0.43, 
         phase=0, 
-        freq=0.43,       # Key parameter for pulsatile input
-        prc2=prc2,
         amplitude=amplitude, 
         T_init=T_init, 
         ΔT=ΔT, 
-        type="pulsatile",  # Specifies signal type for plotting
-        T_final=T_final
+        tspan=(0.0, T_init + T_final), # Define tspan here
+        prc2=prc2,
+        phase_reset=true 
     )
     
-    # Customize Panel B plot appearance
-    plot!(plt_Dll1,
-        title="A=50.0, freq=0.43, ST=56.17", # Title includes key parameters/results
-        xlabel="Time",
+    # Create Panel B plot DIRECTLY with ONLY desired indices and styling
+    plt_Dll1 = plot(sol_b,
+        title="A=50.0, freq=0.43, ST=56.17", 
+        xlabel=L"Time ($t$)", 
         ylabel="Concentration",
-        idxs=[1, 6, 9], # Select specific species indices to plot (MR, H4, H27)
-        labels=["MR(t)" "H4(t)" "H27(t)"], # Labels for selected species
-        legendfontsize=10,
-        guidefontsize=14,
-        tickfontsize=12,
+        idxs=[4, 6, 9], # Ensure ONLY MR(4), H4(6), H27(9) are plotted
+        labels=["MR(t)" "H4(t)" "H27(t)"], 
+        legendfontsize=14, 
+        guidefontsize=18,  
+        tickfontsize=14,   
+        titlefontsize=18,  
+        legend_framestyle=:none, 
         linewidth=2
     )
+    # Add the input signal plot layer
+    pulse_signal(t, A, w, ϕ) = A * (1 + sign(cos(w * t + ϕ)))
+    tt_b = ts_b[1]:0.01:ts_b[2]
+    plot!(plt_Dll1, tt_b, pulse_signal.(tt_b, amplitude, 0.43, phase_b),
+        label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
+        fill=(0, 0.3, :darkgreen), color="black", dpi=300
+    )
+    
     # Save Panel B individually
     savefig(plt_Dll1, joinpath(figure_path, "figure3_panelB_pulsatile.png"))
     println("Figure 3 Panel B saved.")

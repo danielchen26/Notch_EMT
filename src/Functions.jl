@@ -221,8 +221,7 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
     @show t_switching
     if title == "on"
         plt = plot(sol,
-            idxs=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
-            # idxs = [1,2,3,4,5,6,7,8,9,10,11], # all variables
+            idxs=[4, 6, 9], # Plot ONLY MR(4), H4(6), H27(9) by default
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,
@@ -234,7 +233,7 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
             titlefont=font(10, "Arial"))
     elseif title == "off"
         plt = plot(sol,
-            idxs=[4, 5, 6, 9], # [MR,KDM5A,H4,H27,KDM6A]
+            idxs=[4, 6, 9], # Plot ONLY MR(4), H4(6), H27(9) by default
             lw=2,
             xlabel="Time", ylabel="Concentration",
             foreground_color_legend=nothing,

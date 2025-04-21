@@ -258,7 +258,7 @@ plt_2genes_compare
 plt_Dll1
 # savefig(plt_Dll1, "./figures/Dll1_signal_freq_1.4.png")
 
-## =================================================================
+## ======================== Paper figure 3 =========================================
 #! --------------- case with multiple pulses -------------
 T_init = 1e-10
 # ======= pulsatile model
@@ -335,17 +335,17 @@ df = CSV.read(filename, DataFrame)
 
 ## ==== the relationship between driving frequency and switching time group by amplitude =========
 plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=[], palette=cgrad([:goldenrod1, :dodgerblue4, :chartreuse3])) # show only 3 
-#! =================== 6 representative amplitudes  ST - ω plots ------- Paper figure 6 (b) ==========================
+#! =================== 6 representative amplitudes  ST - ω plots ------- 🔴 Paper figure 4 (b) ==========================
 pyplot()
 plt_freq_vs_ST = df_freq_vs_ST_groupby_amp(df; amplitude_select=collect(50:50:300), figure_save_path=figure_save_path)
 
 ## ===========================================================================================
 
 
-## ! ==== the relationship between driving amplitude and driving frequency A -ω , Paper figure 6 (a)========
+## ! ==== the relationship between driving amplitude and driving frequency A -ω , Paper figure 4 (a)========
 # ---- first trim the database with each frequency and its associated minimum amplutide
 df_min_amp = extract_min_amp(df)
-# ---- plot the driving frequency vs driving minimum amplitude 🔴 Figure 6(a) -------
+# ---- plot the driving frequency vs driving minimum amplitude 🔴 Figure 4(a) -------
 pyplot()
 min_amp_vs_freq_plt = plot(df_min_amp.amp, df_min_amp.freq, 
     seriestype=:line,  
@@ -417,7 +417,7 @@ df_592 = A_ω_st_relation_prc2_range(; model=model_pulsatile,
 
 
 
-##! ======================= Figure 7 A-w curve controled by prc2 rate ========================
+##!   ======================= 🔴 Figure 5 A-w curve controled by prc2 rate ========================
 db_idx = 592
 amplitude_range = 0:1:500
 freq_range = 0:0.05:1
@@ -476,7 +476,7 @@ savefig(A_w_prc2_curve, "A_w_prc2_curve_id_592.png")
 df_592_3d
 
 # ===== added plotting function for 3d scatter plot for A-ω-stime groupby prc2 relation ======
-# === New figure 🔴 ====
+# === New figure  ====
 function plot_all_prc2_3d(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol, z_col::Symbol; kwargs...)
     # group by prc2 column
     grouped_df = groupby(df, prc2_col)

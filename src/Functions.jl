@@ -819,7 +819,7 @@ end
 
 
 function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=:RdYlBu_6, figure_save_path=nothing, arg...)
-    @show db_idx
+    @show global_db_idx
     if isempty(amplitude_select) == false
         df_amp_select = filter(row -> row.amp in amplitude_select, df)
         color_catg = length(amplitude_select)
@@ -837,6 +837,8 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
         legend_position=:topleft,
         markershape=:none,  # This removes the dots while keeping everything else the same
         dpi=500,
+        guidefontsize=14,
+        tickfontsize=12,
         arg...
     )
 

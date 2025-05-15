@@ -244,7 +244,7 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
         plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, 2 * amplitude, 0], # FIXME: need to change to 2*amplitude
             label="Sustained Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
             # ylims = [0, 400],
-            fill=(0, 0.3, :blue), color="black", dpi=300)
+            fill=(0, 0.3, :blue), color="black", dpi=500)
         return plt
     elseif freq != 0
         if type == "pulsatile"
@@ -252,14 +252,14 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
             plot!(plt, tt, pulse_signal.(tt, amplitude, freq, phase),
                 label="Pulsatile Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=500)
             return plt
         elseif type == "bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
             plot!(plt, tt, bump_signal.(tt, amplitude, freq, phase),
                 label="Bump Input", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=500)
             return plt
         end
     end
@@ -489,14 +489,14 @@ function Two_Genes_TS_by_Prc2(; model=model, id1=592, id2=49, id2_freq=0.2, phas
             plot!(plt_gene2_Dll1, tt, pulse_signal.(tt, amplitude2, id2_freq, phase2),
                 label="Pulsatile Signal", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=500)
             # return plt_gene2_Dll1
         elseif type == "bump"
             bump_signal(t, A, w, ϕ) = A * (abs(cos(w * t + ϕ)))
             plot!(plt_gene2_Dll1, tt, bump_signal.(tt, amplitude2, id2_freq, phase2),
                 label="Pulsatile Signal", seriestype=:steppre, line=(:dot, 2), alpha=0.8,
                 # ylims = [0, 700],
-                fill=(0, 0.3, :darkgreen), color="black", dpi=300)
+                fill=(0, 0.3, :darkgreen), color="black", dpi=500)
             check2 == -1 ?
             title!(plt_gene2_Dll1, "A=$amplitude2, freq=$id2_freq, PRC2 rate=$prc2,  ST=$t_switching2_improved",
                 titlefont=font(10, "Arial"),) :
@@ -808,7 +808,7 @@ function anim_freq_tswitch(; range=0:0.01:0.4, amplitude=500, db_idx=301)
                 foreground_color_legend=nothing,
                 # ylims = [0,500],
                 title="A : $amplitude, freq = $freq_i, switch time : $t_switching",
-                dpi=300)
+                dpi=500)
         end
     end
     gif(anim, "freq_animation.gif", fps=1)
@@ -832,17 +832,18 @@ function df_freq_vs_ST_groupby_amp(df; ΔT=100, amplitude_select=false, palette=
         group=:amp,
         palette=palette,
         lw=3,
-        legend_title="Amplitude",
+        legend_title=L"Amplitude ($A$)",
         legend_position=:topleft,
         markershape=:none,  # This removes the dots while keeping everything else the same
         dpi=500,
-        guidefontsize=14,
-        tickfontsize=12,
+        guidefontsize=18,
+        tickfontsize=14,
+        legendfontsize=10,
         arg...
     )
 
     xlabel!(plt, L"Driving Frequency ($\omega$)")
-    ylabel!(plt, "Switching Time (ST)")
+    ylabel!(plt, "Switching Time " * L"(ST)")
     
     if figure_save_path != nothing
         savefig(plt, figure_save_path * "ω_vs_ST" * ".png")

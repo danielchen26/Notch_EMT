@@ -72,7 +72,7 @@ function generate_figure3()
         model=model_pulsatile, 
         db_idx=db_idx, 
         phase=0, 
-        freq=0.0,        
+        freq=0.0, 
         prc2=prc2,
         amplitude=amplitude, 
         T_init=T_init, 
@@ -85,19 +85,19 @@ function generate_figure3()
     # Apply styling and attempt to select specific variables using plot!
     # WARNING: This might not remove KDM5A from the legend/plot reliably.
     plot!(plt_Dll4,
-        title="A=50.0, freq=0.0, ST=10.3", 
+        title=L"A=50.0, \omega=0.0, ST=10.3",
         xlabel=L"Time ($T$)",
         ylabel="Concentration",
         idxs=[4, 6, 9], # Attempt to select MR, H4, H27
-        labels=["MR(t)" "H4(t)" "H27(t)"], 
-        legendfontsize=12,
+        labels=["MR(t)" "H4(t)" "H27(t)"],
+        legendfontsize=10,
         guidefontsize=18,  
         tickfontsize=14,   
         titlefontsize=18,  
         legend_framestyle=:none, 
         linewidth=2
     )
-
+    
     # Save Panel A individually
     savefig(plt_Dll4, joinpath(figure_path, "figure3_panelA_sustained.png"))
     println("Figure 3 Panel A saved.")
@@ -108,12 +108,12 @@ function generate_figure3()
         model=model_pulsatile, 
         db_idx=db_idx, 
         phase=0, 
-        freq=0.43,       
+        freq=0.43, 
         prc2=prc2,
         amplitude=amplitude, 
         T_init=T_init, 
         ΔT=ΔT, 
-        type="pulsatile",  
+        type="pulsatile", 
         T_final=T_final,
         phase_reset=true,
         title="off" # Turn off default title in wrapper
@@ -122,19 +122,19 @@ function generate_figure3()
     # Apply styling and attempt to select specific variables using plot!
     # WARNING: This might not remove KDM5A from the legend/plot reliably.
     plot!(plt_Dll1,
-        title="A=50.0, freq=0.43, ST=56.17", 
+        title=L"A=50.0, \omega=0.43, ST=56.17",
         xlabel=L"Time ($T$)",
         ylabel="Concentration",
         idxs=[4, 6, 9], # Attempt to select MR, H4, H27
-        labels=["MR(t)" "H4(t)" "H27(t)"], 
-        legendfontsize=12,
+        labels=["MR(t)" "H4(t)" "H27(t)"],
+        legendfontsize=10,
         guidefontsize=18,  
         tickfontsize=14,   
         titlefontsize=18,  
         legend_framestyle=:none, 
         linewidth=2
     )
-
+    
     # Save Panel B individually
     savefig(plt_Dll1, joinpath(figure_path, "figure3_panelB_pulsatile.png"))
     println("Figure 3 Panel B saved.")
@@ -196,16 +196,23 @@ function generate_figure4()
     println("Generating Panel 4A: A-ω Boundary")
     df_min_amp = extract_min_amp(df)
     
+    # Find the minimum amplitude required for switching at frequency zero (sustained input)
+    sustained_switching_amp_row = filter(row -> row.freq == 0, df_min_amp)
+    sustained_amp = isempty(sustained_switching_amp_row) ? missing : sustained_switching_amp_row[1, :amp]
+    max_amp_plot = maximum(df_min_amp.amp) # Get max amplitude for xlim padding
+
     # Create the base plot object
     fig4a = plot(
         xlabel=L"Driving Amplitude ($A$)", 
         ylabel=L"Driving Frequency ($\omega$)",
-        guidefontsize=14, 
-        tickfontsize=12,  
+        guidefontsize=18,
+        tickfontsize=14,
+        legendfontsize=10,
         legend=:topleft,
+        xlims=(0, max_amp_plot * 1.05), # Ensure x-axis starts at 0 and add 5% padding
         dpi=500
     )
-
+    
     # Plot the boundary line
     plot!(fig4a, df_min_amp.amp, df_min_amp.freq, 
         seriestype=:line,  
@@ -214,6 +221,17 @@ function generate_figure4()
         label="Switching Boundary"
     )
     
+    # Add point and annotation for sustained switching amplitude if found
+    if !ismissing(sustained_amp)
+        scatter!(fig4a, [sustained_amp], [0], 
+            markercolor=:green,
+            markersize=5, 
+            label="Min. Sustained Amp")
+        # Slightly offset annotation for clarity
+        annotate!(fig4a, sustained_amp + 0.02 * xlims(fig4a)[2], 0.05 * ylims(fig4a)[2], # Increased x-offset slightly
+            text("($sustained_amp, 0)", 10, :green, :left)) # Changed color to :green
+    end
+
     # Get plot limits for filling and annotation placement
     xlims_vals = xlims(fig4a)
     ylims_vals = ylims(fig4a) 
@@ -329,13 +347,14 @@ function generate_figure5()
     fig5 = plot_all_prc2(df_592_3d, :prc2, :amp, :freq; # Plot amp vs freq, grouped by prc2 
         legend=:outerright, 
         foreground_color_legend=nothing, 
-        legendfontsize=9,
+        legendfontsize=10, # Reduced from 12
         legendtitle="PRC2 Rate",
-        guidefontsize=14,
-        tickfontsize=12,
-        xlabel="Driving Amplitude (A)",
+        guidefontsize=18,
+        tickfontsize=14,
+        xlabel=L"Driving Amplitude ($A$)",
         ylabel=L"Driving Frequency ($\omega$)",
-        title="A-ω Decision Boundary Regulated by PRC2 Rate",
+        title=L"$A$-$\omega$ Decision Boundary Regulated by PRC2 Rate",
+        titlefontsize=18,
         dpi=500,
         size=(650, 450)
     )
@@ -345,6 +364,212 @@ function generate_figure5()
     println("Figure 5 saved.")
     
     return fig5 # Return the plot object
+end
+
+# -------------------------------------------------------------------
+# SECTION 3.5: Custom Simulation for Critical Amplitude Check
+# -------------------------------------------------------------------
+
+# =======================
+# Check Critical Amplitude for Specific Parameters
+# =======================
+# Performs a simulation to find the critical amplitude for a given
+# db_idx, target frequency, and new ΔT.
+function check_critical_amplitude_custom(; model=model_pulsatile, db_idx=49, target_freq=1.0, new_ΔT=200.0, amplitude_range=0:1:300, prc2_val="NA")
+    println("\nChecking critical amplitude for: db_idx=$db_idx, ω=$target_freq, ΔT=$new_ΔT, PRC2=$prc2_val")
+
+    # Generate A-ω-ST data for the specific frequency and ΔT
+    # A_ω_st_relation returns a DataFrame of *switching* events
+    df_switching_events = A_ω_st_relation(;
+        model=model,
+        db_idx=db_idx,
+        amplitude_range=amplitude_range,
+        freq_range=[target_freq], # Pass the target frequency as a single-element array
+        ΔT=new_ΔT,
+        prc2=prc2_val, # Use the prc2 value from Figure 3 & 4 if not specified, or allow override
+        mute_parameter_disp=true
+    )
+
+    if isempty(df_switching_events)
+        println("No switching events found for the given parameters and amplitude range.")
+        println("Critical amplitude might be higher than $(maximum(amplitude_range)) or switching does not occur under these conditions.")
+        return nothing
+    end
+
+    # Filter for the target frequency (should be redundant if freq_range was [target_freq] but good for safety)
+    df_target_freq = filter(row -> row.freq == target_freq, df_switching_events)
+
+    if isempty(df_target_freq)
+        println("No switching events found specifically for frequency ω=$target_freq after filtering.")
+        # This case should ideally not be reached if A_ω_st_relation works as expected with a single freq in freq_range
+        return nothing
+    end
+
+    # The critical amplitude is the minimum amplitude in this filtered DataFrame
+    critical_amplitude = minimum(df_target_freq.amp)
+
+    println("Critical amplitude for ω=$target_freq and ΔT=$new_ΔT (db_idx=$db_idx, PRC2=$prc2_val): $critical_amplitude")
+    
+    # For comparison, let's find the critical amplitude for the original ΔT=100 at the same frequency
+    println("\nFor comparison, checking critical amplitude for original ΔT=100 at ω=$target_freq (db_idx=$db_idx, PRC2=$prc2_val)")
+    df_switching_events_original_ΔT = A_ω_st_relation(;
+        model=model,
+        db_idx=db_idx,
+        amplitude_range=amplitude_range,
+        freq_range=[target_freq],
+        ΔT=100.0, # Original ΔT from Figure 4
+        prc2=prc2_val,
+        mute_parameter_disp=true
+    )
+
+    if isempty(df_switching_events_original_ΔT)
+        println("No switching events found for original ΔT=100 at ω=$target_freq.")
+    else
+        df_target_freq_original_ΔT = filter(row -> row.freq == target_freq, df_switching_events_original_ΔT)
+        if isempty(df_target_freq_original_ΔT)
+            println("No switching events found specifically for frequency ω=$target_freq with original ΔT=100 after filtering.")
+        else
+            critical_amplitude_original_ΔT = minimum(df_target_freq_original_ΔT.amp)
+            println("Critical amplitude for ω=$target_freq and original ΔT=100 (db_idx=$db_idx, PRC2=$prc2_val): $critical_amplitude_original_ΔT")
+        end
+    end
+    
+    return critical_amplitude
+end
+
+# =======================
+# Helper Function to Get A-ω Boundary Data for a specific ΔT
+# =======================
+# Generates or loads A-ω boundary data for a given db_idx, amplitude range, 
+# frequency range, ΔT, and prc2 value.
+function get_A_omega_boundary_data(; model=model_pulsatile, db_idx=49, amplitude_range=0:1:300, freq_range=0:0.02:2, ΔT_value=100.0, prc2_val="NA")
+    println("\nGenerating or loading A-ω boundary data for: db_idx=$db_idx, ΔT=$ΔT_value, PRC2=$prc2_val")
+    println("Amplitude range: $amplitude_range, Frequency range: $freq_range")
+
+    # Define paths using the standard pathgen function (saves to Data/regular/db_idx:X/)
+    df_save_path, _ = pathgen(db_idx=db_idx, type="pulsatile_deltaT_effect") # Using a slightly different type to avoid filename clashes if needed
+
+    # Sanitize range string representations for filename (replace : with -)
+    freq_range_str =replace(string(freq_range), ":" => "-")
+    amp_range_str = replace(string(amplitude_range), ":" => "-")
+    
+    # Construct the expected filename based on parameters
+    filename = joinpath(df_save_path, "A_omega_boundary_db_idx_$(db_idx)_freq_$(freq_range_str)_amp_$(amp_range_str)_deltaT_$(ΔT_value)_prc2_$(prc2_val).csv")
+    
+    local df_boundary # Dataframe to hold A-ω boundary
+    if isfile(filename)
+        println("Loading pre-computed A-ω boundary data from: $(filename)")
+        df_boundary = CSV.read(filename, DataFrame)
+    else
+        println("Generating A-ω switching data (this may take time)...")
+        # Perform simulations across the amplitude and frequency ranges for the given ΔT
+        df_switching_events = A_ω_st_relation(
+            model=model,
+            db_idx=db_idx,
+            amplitude_range=amplitude_range,
+            freq_range=freq_range,
+            ΔT=ΔT_value,
+            prc2=prc2_val,
+            mute_parameter_disp=true
+        )
+        
+        if isempty(df_switching_events)
+            println("Warning: No switching events found for db_idx=$db_idx, ΔT=$ΔT_value, PRC2=$prc2_val with the given ranges.")
+            println("Cannot generate A-ω boundary. Returning an empty DataFrame.")
+            # Return an empty DataFrame with expected columns if no switching occurs
+            return DataFrame(amp=Float64[], freq=Float64[])
+        end
+
+        println("Extracting minimum amplitude for switching boundary...")
+        df_boundary = extract_min_amp(df_switching_events)
+        
+        # Save the newly generated boundary data
+        mkpath(dirname(filename)) # Ensure directory exists
+        CSV.write(filename, df_boundary)
+        println("A-ω boundary data saved to: $(filename)")
+    end
+    return df_boundary
+end
+
+# =======================
+# Figure Compare A-ω Curves for Different ΔT
+# =======================
+# Generates and plots A-ω switching boundary curves for different ΔT values
+# to visualize the effect of pulse duration on the switching threshold.
+function generate_figure_compare_A_omega_for_different_deltaT()
+    println("\nGenerating Figure: Comparison of A-ω boundaries for different ΔT values...")
+    
+    # Common parameters for the comparison
+    db_idx = 49      # Specific gene parameter set ID (same as Fig 4)
+    amplitude_range = 0:1:300 # FINER amplitude range (step 1, up to 300)
+    freq_range = 0:0.02:2   # FINER frequency range (step 0.02)
+    prc2_val = "NA"       # Use default PRC2 for db_idx 49, consistent with Fig 4
+    
+    # ΔT values to compare
+    deltaT_values = [100.0, 200.0] # Original ΔT and the new one
+
+    # Ensure PyPlot backend is active
+    pyplot()
+    
+    # Create the base plot object
+    fig_compare_deltaT = plot(
+        xlabel=L"Driving Amplitude ($A$)", 
+        ylabel=L"Driving Frequency ($\omega$)",
+        title="", # REMOVED title
+        guidefontsize=18,
+        tickfontsize=14,
+        legendfontsize=10,
+        legend=:outerright, # Legend outside and centered on the right
+        dpi=500
+    )
+    
+    max_amp_overall = 0.0 # To adjust xlims later
+
+    # Colors for different ΔT curves
+    colors = [:blue, :red, :green, :purple] # Add more if comparing more ΔT values
+
+    for (idx, deltaT) in enumerate(deltaT_values)
+        println("\nProcessing for ΔT = $deltaT...")
+        df_boundary = get_A_omega_boundary_data(
+            db_idx=db_idx,
+            amplitude_range=amplitude_range,
+            freq_range=freq_range,
+            ΔT_value=deltaT,
+            prc2_val=prc2_val
+        )
+        
+        if !isempty(df_boundary) && nrow(df_boundary) > 0
+            # Sort by frequency for correct line plotting, though extract_min_amp usually does this
+            sort!(df_boundary, :freq)
+            
+            plot!(fig_compare_deltaT, df_boundary.amp, df_boundary.freq, 
+                seriestype=:line,  
+                linewidth=2.5,
+                color=colors[idx % length(colors) + 1], # Cycle through colors
+                label="ΔT = $deltaT"
+            )
+            current_max_amp = maximum(df_boundary.amp)
+            if current_max_amp > max_amp_overall
+                max_amp_overall = current_max_amp
+            end
+        else
+            println("No boundary data to plot for ΔT = $deltaT.")
+        end
+    end
+    
+    # Adjust xlims if data was plotted
+    if max_amp_overall > 0
+        xlims!(fig_compare_deltaT, (0, max_amp_overall * 1.05))
+    else # Default xlims if no data
+        xlims!(fig_compare_deltaT, (0, maximum(amplitude_range) * 1.05))
+    end
+
+    # Save the figure
+    fig_save_path = joinpath(figure_path, "figure_compare_A_omega_deltaT_db$(db_idx).png")
+    savefig(fig_compare_deltaT, fig_save_path)
+    println("Comparison figure saved to: $fig_save_path")
+    
+    return fig_compare_deltaT
 end
 
 # -------------------------------------------------------------------
@@ -376,6 +601,20 @@ end
 # generate_figure4()
 # generate_figure5() 
 run_all() # Uncomment this to generate all figures
+
+# Perform the custom check requested by the user
+# For db_idx=49 (used in Fig 4), ω=1.0, new_ΔT=200.0.
+# The prc2 value for db_idx=49 in Fig 3 was 0.41. A_ω_st_relation defaults to "NA" for prc2 if not given,
+# which means it will use the default from the loaded parameter set for db_idx=49.
+# Let's use the same PRC2 as Fig 3 for consistency if needed, otherwise let A_ω_st_relation use its default for db_idx 49
+# Fig 3 used prc2 = 0.41 for db_idx = 49.
+# Fig 4 uses db_idx = 49, but A_ω_st_relation is called without a prc2 override, so it uses the default for that db_idx from the database.
+# For this custom check, we will also let it use the default prc2 for db_idx 49 by passing "NA" (which is default for A_ω_st_relation)
+check_critical_amplitude_custom(db_idx=49, target_freq=1.0, new_ΔT=200.0, amplitude_range=0:5:300, prc2_val="NA")
+check_critical_amplitude_custom(db_idx=49, target_freq=1.0, new_ΔT=100.0, amplitude_range=0:5:300, prc2_val="NA")
+
+# Generate the new comparison figure for A-ω curves with different ΔT
+generate_figure_compare_A_omega_for_different_deltaT()
 
 # Print guidance message when the script is included or run without uncommenting a generation line
 # Simplified condition to check if running as main script non-interactively

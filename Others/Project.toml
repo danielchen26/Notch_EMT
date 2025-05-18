@@ -1,0 +1,10 @@
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DiffEqBiological = "eb300fae-53e8-50a0-950c-e21f52c2b7e0"
+HomotopyContinuation = "f213a82b-91d6-5c5d-acf7-10f1c761b327"
+Interact = "c601a237-2ae4-5e1e-952c-7a85b0c7eef1"
+OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
+StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+VegaDatasets = "0ae4a718-28b7-58ec-9efb-cded64d6d5b4"

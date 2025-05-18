@@ -29,7 +29,7 @@ includet("./Functions.jl")
 println("Loading database and models...")
 # Load the parameter database, initial conditions, and get a random index
 # (Note: the random db_idx is global, figure functions use local specific indices)
-db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, global_db_idx = loading_database()
+db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, global_db_idx = loading_database(; data_path="../Notch_EMT_data/Notch_params_complete.csv")
 
 # Define paths for saving figures and potentially loading/saving data
 figure_path = joinpath(dirname(@__DIR__), "figures", "paper") # Path for final paper figures

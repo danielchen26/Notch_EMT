@@ -6,3 +6,12 @@ Notch_Epi/Notch_force_ligand_dynamics/data/Notch_params_complete_finer.csv
 old/
 Data/
 figures/
+.venv/
+__pycache__/
+*.pyc
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

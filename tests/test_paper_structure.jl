@@ -5,7 +5,7 @@ println("Testing Notch_EMT_paper.jl structure...")
 println("=" ^ 60)
 
 # Test 1: Check if script file exists
-script_path = "../src/Notch_EMT_paper.jl"
+script_path = "src/Notch_EMT_paper.jl"
 if !isfile(script_path)
     println("✗ Script file not found: $script_path")
     exit(1)
@@ -69,7 +69,7 @@ end
 
 # Test 3: Check for actual data files
 println("\n3. Checking data availability:")
-data_file = "../../Notch_EMT_data/Notch_params_complete.csv"
+data_file = "../Notch_EMT_data/Notch_params_complete.csv"
 if isfile(data_file)
     println("  ✓ Parameter database exists: $data_file")
     # Check file size
@@ -82,9 +82,9 @@ end
 # Check for pre-computed data in project root
 println("\n4. Checking for pre-computed data files:")
 precomputed_files = [
-    "../df_592_3d.csv",
-    "../df_49_592.csv",
-    "../initial_condition.csv"
+    "df_592_3d.csv",
+    "df_49_592.csv",
+    "initial_condition.csv"
 ]
 
 for file in precomputed_files
@@ -97,9 +97,9 @@ end
 
 # Test 4: Check if Functions.jl exists
 println("\n5. Checking dependencies:")
-if isfile("../src/Functions.jl")
+if isfile("src/Functions.jl")
     println("  ✓ Functions.jl exists")
-    functions_content = read("../src/Functions.jl", String)
+    functions_content = read("src/Functions.jl", String)
     
     # Check for key functions
     key_functions = ["loading_database", "Import_model", "single_solve", "A_ω_st_relation"]

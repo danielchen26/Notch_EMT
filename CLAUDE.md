@@ -65,10 +65,22 @@ include("Notch_EMT_tutorial/Notch_EMT_main.jl")
 - `src/`: Main source code
   - `Functions.jl`: Core simulation and analysis functions
   - `Notch_EMT_paper.jl`: Script to generate paper figures
-- `Data/`: Simulation results organized by parameter indices
-- `figures/`: Generated plots and visualizations
+  - `archive/`: Old versions of main scripts
+- `parameter_generation/`: Scripts for generating parameter databases
+- `Data/`: Simulation results organized by parameter indices (git-ignored)
+  - `regular/`: Regular simulation results by db_idx
+  - `Poisson/`: Poisson simulation results
+  - `precomputed/`: Pre-computed analysis results
+- `figures/`: Generated plots and visualizations (git-ignored)
+  - `paper/`: Figures for the paper
+- `tests/`: Verification and testing scripts
+- `examples/`: Example analyses
+  - `notebooks/`: Jupyter notebooks
 - `Notch_EMT_tutorial/`: Interactive tutorial with example analyses
-- `Others/`: Additional analyses including SciML experiments
+- `models/legacy/`: Old model implementations
+- `utils/`: Utility functions
+- `visualization/`: Visualization scripts
+- `docs/`: Documentation files
 
 ## Important Technical Notes
 

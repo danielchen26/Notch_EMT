@@ -53,7 +53,10 @@ Notch_EMT/
 ├── Notch_EMT_tutorial/       # Tutorial and examples
 │   └── functions/            # Tutorial-specific functions
 │
-└── Notebooks/                # Jupyter notebooks
+├── examples/                 # Example analyses
+│   └── notebooks/            # Jupyter notebooks
+│
+└── Data/precomputed/         # Pre-computed analysis results
 ```
 
 ## Key Files

@@ -24,15 +24,14 @@ Notch_EMT/
 ├── utils/                     # Utility functions
 ├── visualization/             # Plotting scripts
 ├── examples/notebooks/        # Jupyter notebooks
-├── docs/                      # Documentation
-└── Notch_EMT_tutorial/        # Interactive tutorial
+└── docs/                      # Documentation
 ```
 
 ### 3. Preserved Essential Components
 - ✅ Parameter generation scripts moved to `parameter_generation/`
 - ✅ Legacy models archived in `models/legacy/`
 - ✅ Visualization scripts moved to `visualization/`
-- ✅ Tutorial kept intact in `Notch_EMT_tutorial/`
+- ✅ Removed redundant `Notch_EMT_tutorial/` (functionality covered by paper code)
 
 ### 4. Updated Documentation
 - ✅ Created comprehensive README.md
@@ -57,6 +56,7 @@ Notch_EMT/
 - ~260 files from obsolete directories
 - ~1.8M lines of unused code
 - Duplicate notebooks and CSV files
+- Notch_EMT_tutorial directory (redundant with paper code)
 
 ## Important Notes
 

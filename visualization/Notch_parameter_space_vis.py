@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import altair as alt
 import pandas as pd
 import seaborn as sns
-df = pd.read_csv("./Notch_parameter_bistability_r|nr_statistics.csv")
-df = pd.read_csv("./Notch_core_bistability_db.csv")
+df = pd.read_csv("../Data/parameter_databases/Notch_parameter_bistability_r|nr_statistics.csv")
+df = pd.read_csv("../Data/parameter_databases/Notch_core_bistability_db.csv")
 
 
 df_test = df.loc[(df['pp'] ==100) & (df['p'] >=90),:]

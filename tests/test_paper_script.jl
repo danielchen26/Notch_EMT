@@ -142,7 +142,7 @@ end
 println("\n5.3 Testing Figure 5 generation...")
 try
     # Check for pre-computed data
-    data_file_path = joinpath(dirname(@__DIR__), "df_592_3d.csv")
+    data_file_path = joinpath(dirname(@__DIR__), "Data", "precomputed", "df_592_3d.csv")
     if isfile(data_file_path)
         println("  ℹ Using pre-computed data from: df_592_3d.csv")
     else

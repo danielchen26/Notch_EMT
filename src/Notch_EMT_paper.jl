@@ -314,8 +314,8 @@ function generate_figure5()
     
     # Define the specific filename used in the original script
     target_filename = "df_592_3d.csv"
-    # Ensure we look for the file in the main project directory (project root)
-    data_file_path = joinpath(dirname(@__DIR__), target_filename) # Correct path
+    # Look for the file in the Data/precomputed directory
+    data_file_path = joinpath(dirname(@__DIR__), "Data", "precomputed", target_filename)
     
     # Load the specific curated data file if it exists, otherwise generate it.
     local df_592_3d # Dataframe holding A-ω-ST results across PRC2 rates

@@ -428,8 +428,8 @@ df_592_3d = A_ω_st_relation_prc2_range(; model=model_pulsatile,
     prc2_range=0.1:0.1:1,
     ΔT=100)
 
-# CSV.write("df_592_3d.csv", df_592_3d)
-df_592_3d = CSV.read("df_592_3d.csv", DataFrame) # ! this is the dataframe for paper figure 7, can directly load it.
+# CSV.write("Data/precomputed/df_592_3d.csv", df_592_3d)
+df_592_3d = CSV.read("Data/precomputed/df_592_3d.csv", DataFrame) # ! this is the dataframe for paper figure 7, can directly load it.
 function plot_all_prc2(df::DataFrame, prc2_col::Symbol, x_col::Symbol, y_col::Symbol; kwargs...)
     # Use gr() backend instead of pyplot() since it's more stable
     pyplot()
@@ -508,7 +508,7 @@ df_49_592 = A_ω_st_prc2_multi_genes(gene_set_id=[49, 592],
     freq_range=0:0.05:1,
     prc2_range=0:0.05:1,
     ΔT=100)
-CSV.write("df_49_592.csv",df_49_592)
+CSV.write("Data/precomputed/df_49_592.csv",df_49_592)
 ## ===========================================================================================
 
 

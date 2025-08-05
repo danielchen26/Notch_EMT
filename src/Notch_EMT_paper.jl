@@ -29,12 +29,12 @@ includet("./Functions.jl")
 println("Loading database and models...")
 # Load the parameter database, initial conditions, and get a random index
 # (Note: the random db_idx is global, figure functions use local specific indices)
-db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, global_db_idx = loading_database(; data_path="../Notch_EMT_data/Notch_params_complete.csv")
+db, p_names, initi_names, parameter_set, initial_condition, rand_idx_set, global_db_idx = loading_database()
 
 # Define paths for saving figures and potentially loading/saving data
-figure_path = joinpath(dirname(@__DIR__), "figures", "paper") # Path for final paper figures
-data_path_regular = joinpath(dirname(@__DIR__), "Data", "regular") # Path for general simulation data
-data_path_main = joinpath(dirname(@__DIR__), "Data") # Main data directory
+figure_path = joinpath("figures", "paper") # Path for final paper figures
+data_path_regular = joinpath("Data", "regular") # Path for general simulation data
+data_path_main = joinpath("Data") # Main data directory
 
 # Create output directories if they don't exist
 isdir(figure_path) || mkpath(figure_path)
@@ -315,7 +315,7 @@ function generate_figure5()
     # Define the specific filename used in the original script
     target_filename = "df_592_3d.csv"
     # Look for the file in the Data/precomputed directory
-    data_file_path = joinpath(dirname(@__DIR__), "Data", "precomputed", target_filename)
+    data_file_path = joinpath("Data", "precomputed", target_filename)
     
     # Load the specific curated data file if it exists, otherwise generate it.
     local df_592_3d # Dataframe holding A-ω-ST results across PRC2 rates

@@ -63,24 +63,29 @@ include("Notch_EMT_tutorial/Notch_EMT_main.jl")
 ## Project Structure
 
 - `src/`: Main source code
-  - `Functions.jl`: Core simulation and analysis functions
+  - `Functions.jl`: Core simulation and analysis functions (updated for new ModelingToolkit API)
   - `Notch_EMT_paper.jl`: Script to generate paper figures
   - `archive/`: Old versions of main scripts
-- `parameter_generation/`: Scripts for generating parameter databases
+- `tests/`: Test scripts for verification and debugging
+  - Model behavior tests, parameter ordering tests, database loading tests
+  - See `tests/README.md` for details
+- `docs/`: Project documentation
+  - `README.md`: Documentation index
+  - `SETUP.md`: Installation and setup guide
+  - `USER_GUIDE.md`: Comprehensive usage guide
+  - `ModelingToolkit_Migration_Guide.md`: API migration guide
 - `Data/`: Simulation results organized by parameter indices (git-ignored)
   - `regular/`: Regular simulation results by db_idx
-  - `Poisson/`: Poisson simulation results
   - `precomputed/`: Pre-computed analysis results
 - `figures/`: Generated plots and visualizations (git-ignored)
-  - `paper/`: Figures for the paper
-- `tests/`: Verification and testing scripts
-- `examples/`: Example analyses
-  - `notebooks/`: Jupyter notebooks
+  - `paper/`: Paper figures (Figures 3, 4, 5)
+  - `parameter_analysis/`: Parameter analysis plots
+- `parameter_generation/`: Scripts for generating parameter databases
 - `Notch_EMT_tutorial/`: Interactive tutorial with example analyses
-- `models/legacy/`: Old model implementations
+- `examples/`: Example analyses and notebooks
 - `utils/`: Utility functions
 - `visualization/`: Visualization scripts
-- `docs/`: Documentation files
+- `models/legacy/`: Old model implementations
 
 ## Important Technical Notes
 
@@ -97,9 +102,31 @@ include("Notch_EMT_tutorial/Notch_EMT_main.jl")
    - `db_idx`: Indexes specific parameter sets from the database
    - Common indices: 49 (used in Figures 3,4), 592 (used in Figure 5)
 
+5. **ModelingToolkit Compatibility**: 
+   - Uses SymbolicIndexingInterface for parameter access in callbacks
+   - Parameter indexing is symbolic, not integer-based
+   - Fixed signal visualization bug in `single_solve_plot()`
+   - See `docs/ModelingToolkit_Migration_Guide.md` for details
+
+6. **Database Path**: 
+   - Parameter database location: `../Notch_EMT_data/Notch_params_complete.csv`
+   - Contains both parameters (k0, k1, k2, etc.) and initial conditions
+   - `loading_database()` uses default path to this file
+
 ## Debugging Tips
 
 - If plots don't display correctly, ensure PyPlot backend is active: `pyplot()`
 - For performance issues, check if pre-computed data exists in `Data/` directory
 - Phase reset issues: Set `phase_reset=false` if custom phase control needed
 - Memory issues with large parameter sweeps: Reduce resolution in `amplitude_range` or `freq_range`
+- Parameter mismatch errors: Check parameter order matches between database and model
+- Signal visualization issues: Verify signal timing in plots matches actual callback timing
+- Database loading errors: Ensure `Notch_EMT_data/` folder exists at parent directory level
+
+## Recent Updates (2024)
+
+- Migrated to newer Catalyst.jl/ModelingToolkit.jl API
+- Fixed parameter indexing to use symbolic approach
+- Corrected signal visualization timing bug
+- Consolidated documentation and removed redundancy
+- Added comprehensive test suite in `tests/` folder

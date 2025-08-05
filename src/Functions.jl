@@ -1,3 +1,19 @@
+# Functions.jl - Core simulation and analysis functions for Notch-EMT project
+# 
+# Key Updates for ModelingToolkit Compatibility:
+# 1. Added SymbolicIndexingInterface for parameter access in callbacks
+# 2. Updated make_cb and make_callbacks to use symbolic parameter indexing
+# 3. Fixed parameter ordering in single_solve and remake_solve_prob_by_ID
+# 4. Corrected signal visualization in single_solve_plot
+# 5. Updated loading_database to use correct parameter file path
+#
+# See docs/ModelingToolkit_Migration_Guide.md for detailed migration notes
+
+# Import required packages
+using Catalyst, DifferentialEquations, DataFrames, CSV, Plots, Random, Distributions
+using StatsPlots, ProgressMeter, Latexify, Measures, LaTeXStrings
+using SymbolicIndexingInterface
+
 ## ====================== Defining the model and parameters ==========================
 module model_parameters
 Base.@kwdef mutable struct Signal
@@ -15,19 +31,17 @@ end
 
 
 ## ================ import database =================
-function loading_database(; data_path="../../../Notch_EMT_data/Notch_params_complete.csv")
+function loading_database(; data_path="../Notch_EMT_data/Notch_params_complete.csv")
     db = CSV.File(data_path) |> DataFrame
-    p_names = names(db)[1:11]
-    initi_names = names(db)[13:end]
-
-    # df = db[shuffle(1:nrow(db))[1:10], :]
-    # parameter_set = df[:, p_names]
-    # initial_condition = df[:, initi_names]
-    ##  ================================ With random parameters generate switching dynamics ============================================
-    # db_idx = 210 is very sensitive to low amplitude = 0.9
-    # df = db[shuffle(1:nrow(db))[1:10], :]
+    
+    # Parameter names are in columns 1-11
+    p_names = names(db)[1:11]  # k0, k1, k2, d, m, p, k, pp, kk, δ, α1
     parameter_set = db[:, p_names]
+    
+    # Initial condition names are in columns 13-25 (skipping N column)
+    initi_names = names(db)[13:end]  # R_init, NR_init, M_init, MR_init, etc.
     initial_condition = db[:, initi_names]
+    
     rand_idx_set = shuffle(1:nrow(db))
     @show db_idx = rand(rand_idx_set)
     @show parameter_set[db_idx, :]
@@ -54,7 +68,7 @@ function Import_model(; type="pulsatile")
             k, H27 --> H27 + KDM5A                # KDM5A is enhenced by H27 mark
             δ, (PRC2, KDM5A, KDM6A, KMT) --> ∅                    # Degradation of histone reader and writers
             α1, ∅ --> (KDM6A, KMT, PRC2, KDM5A)
-        end k0 k1 k2 d m p k pp kk δ α1 w A ϕ # put A at last as the control 13th variable
+        end
         model = model_pulsatile
     elseif type == "bump"
         model_bump = @reaction_network begin
@@ -72,7 +86,7 @@ function Import_model(; type="pulsatile")
             k, H27 --> H27 + KDM5A                # KDM5A is enhenced by H27 mark
             δ, (PRC2, KDM5A, KDM6A, KMT) --> ∅                    # Degradation of histone reader and writers
             α1, ∅ --> (KDM6A, KMT, PRC2, KDM5A)
-        end k0 k1 k2 d m p k pp kk δ α1 w A ϕ # put A at last as the control 13th variable
+        end
         model = model_bump
     end
     @show species(model)
@@ -95,14 +109,21 @@ end
 # add document for the following function
 # ts_in is the callback function working time duration, ts_in[1] is the start time, ts_in[2] is the end time
 # at the start time, the value for 13th paraemter is A, at the end time, the value for 13th parameter is turned off to 0.
-function make_cb(ts_in, index, value)
+function make_cb(ts_in, prob, model, value)
     ts = ts_in
     condition(u, t, integrator) = t in ts
+    # Get the parameter A from the model
+    A_param = parameters(model)[1]  # A is the first parameter
+    # Get the parameter index for A using SymbolicIndexingInterface
+    A_idx = parameter_index(prob, A_param)
+    
     function affect!(integrator)
         if integrator.t == ts[1]
-            integrator.p[index] = value
+            # Use the parameter index to set parameter
+            integrator.p[A_idx] = value
         elseif integrator.t == ts[2]
-            integrator.p[index] = 0.0
+            # Use the parameter index to set parameter
+            integrator.p[A_idx] = 0.0
         end
     end
     cb = DiscreteCallback(condition, affect!, save_positions=(true, true))
@@ -120,9 +141,13 @@ sol = solve(deepcopy(prob1); callback=CallbackSet(ps_cb_1, ps_cb_2))
 plot(sol, vars=[4, 5, 6, 9], lw=1.5, xlabel="Time", ylabel="Concentration", dpi=500)
 ```
 """
-function make_callbacks(T_init, ΔT, amplitude)
-    ps_cb_1 = PresetTimeCallback([T_init], integ -> integ.p[end-1] = amplitude)
-    ps_cb_2 = PresetTimeCallback([T_init + ΔT], integ -> integ.p[end-1] = 0.0)
+function make_callbacks(T_init, ΔT, amplitude, model, prob)
+    # Get the parameter A from the model's parameters list
+    A_param = parameters(model)[1]
+    # Get the parameter index for A using SymbolicIndexingInterface
+    A_idx = parameter_index(prob, A_param)
+    ps_cb_1 = PresetTimeCallback([T_init], integ -> integ.p[A_idx] = amplitude)
+    ps_cb_2 = PresetTimeCallback([T_init + ΔT], integ -> integ.p[A_idx] = 0.0)
     return callback = CallbackSet(ps_cb_1, ps_cb_2)
 end
 
@@ -195,15 +220,36 @@ function single_solve(; model=model, db_idx, freq, phase, amplitude, T_init, ΔT
     if phase_reset == true && freq != 0.0
         phase = 3pi / 2 - freq * T_init
     end
-    p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
+    # Get parameters from the database in the expected order
+    db_params = parameter_set[db_idx, :]
+    # Create parameter vector in the order expected by the model:
+    # Model expects: [A, w, ϕ, k1, k2, k0, d, m, p, kk, pp, k, δ, α1]
+    # Database has: [k0, k1, k2, d, m, p, k, pp, kk, δ, α1]
+    p = [
+        0.0,           # A (will be set by callback)
+        freq,          # w  
+        phase,         # ϕ
+        db_params.k1,  # k1
+        db_params.k2,  # k2
+        db_params.k0,  # k0
+        db_params.d,   # d
+        db_params.m,   # m
+        db_params.p,   # p
+        db_params.kk,  # kk
+        db_params.pp,  # pp
+        db_params.k,   # k
+        db_params.δ,   # δ
+        db_params.α1   # α1
+    ]
     pmap = parameters(model) .=> p
     u0 = collect(initial_condition[db_idx, :])
     u0map = species(model) .=> u0
-    ts, cb = make_cb([T_init, T_init + ΔT], 13, amplitude)
     prob1 = ODEProblem(model, u0map, tspan, pmap)
     if prc2 != "NA"
         prob1 = remake_prob(model, u0map, tspan, p; prc2=prc2, mute_parameter_disp=mute_parameter_disp)
     end
+    # Create callbacks after we have the problem
+    ts, cb = make_cb([T_init, T_init + ΔT], prob1, model, amplitude)
     sol = solve(prob1, Rosenbrock23(), callback=cb, tstops=ts)
     return u0map, pmap, p, tspan, ts, cb, sol, phase
 end
@@ -241,7 +287,7 @@ function single_solve_plot(; model=model, db_idx, phase, freq, amplitude, T_init
     end
     tt = ts[1]:0.01:ts[2]
     if freq == 0
-        plot!(plt, [0, ts[1], ts[2], tspan[end]], [0, 0, 2 * amplitude, 0], # FIXME: need to change to 2*amplitude
+        plot!(plt, [0, ts[1], ts[1], ts[2], ts[2], tspan[end]], [0, 0, 2 * amplitude, 2 * amplitude, 0, 0],
             label="Sustained Input", seriestype=:steppre, line=(:dashdot, 2), alpha=0.8,
             # ylims = [0, 400],
             fill=(0, 0.3, :blue), color="black", dpi=500)
@@ -270,10 +316,11 @@ end
 function remake_prob(model, u0map, tspan, p; prc2=0.4, mute_parameter_disp=false)
     if mute_parameter_disp == false
         @show p
-        p[5] = prc2
+        # In the model parameter order, 'm' (PRC2 rate) is at index 8
+        p[8] = prc2
         @show p
     elseif mute_parameter_disp == true
-        p[5] = prc2
+        p[8] = prc2
     end
     pmap = parameters(model) .=> p
     prob_new = ODEProblem(model, u0map, tspan, pmap)
@@ -301,16 +348,34 @@ function remake_solve_prob_by_ID(; model, db_idx, freq=0.0, phase=0.0, amplitude
     @show T_init, ΔT, tspan
     println("\n")
     # ======== change parameter set with a particular prc2 rate
-    p = vcat([collect(parameter_set[db_idx, :]), freq, 0.0, phase]...)
-    println("Parameter Set ID $db_idx : ", p)
-    p[5] = prc2
-    println("New PRC2 rate for ID $db_idx : ", p)
+    # Get parameters from the database in the expected order
+    db_params = parameter_set[db_idx, :]
+    # Create parameter vector in the order expected by the model:
+    # Model expects: [A, w, ϕ, k1, k2, k0, d, m, p, kk, pp, k, δ, α1]
+    p = [
+        0.0,           # A (will be set by callback)
+        freq,          # w  
+        phase,         # ϕ
+        db_params.k1,  # k1
+        db_params.k2,  # k2
+        db_params.k0,  # k0
+        db_params.d,   # d
+        prc2,          # m (PRC2 rate - using the specified value)
+        db_params.p,   # p
+        db_params.kk,  # kk
+        db_params.pp,  # pp
+        db_params.k,   # k
+        db_params.δ,   # δ
+        db_params.α1   # α1
+    ]
+    println("Parameter Set ID $db_idx with PRC2=$prc2 : ", p)
     pmap = parameters(model) .=> p
     u0 = collect(initial_condition[db_idx, :])
     u0map = species(model) .=> u0
-    ts, cb = make_cb([T_init, T_init + ΔT], 13, amplitude)
     #  ======= construct prob and solve
     prob = ODEProblem(model, u0map, tspan, pmap)
+    # Create callbacks after we have the problem
+    ts, cb = make_cb([T_init, T_init + ΔT], prob, model, amplitude)
     sol = solve(prob, Rosenbrock23(), callback=cb, tstops=ts)
     return sol, ts, tspan
 end
